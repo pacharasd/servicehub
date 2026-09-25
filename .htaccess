@@ -1,0 +1,4 @@
+RewriteEngine On
+RewriteRule ^$ /Servicehub/dist/ [R=302,L]
+RewriteRule ^(?:\.git|node_modules|src)(?:/|$) - [F,L,NC]
+RewriteRule ^(?:AGENT\.md|FRONTEND\.md|package(?:-lock)?\.json|vite\.config\.js|index\.html)$ - [F,L,NC]

@@ -1,0 +1,31 @@
+@import "tailwindcss";
+@source "./main.js";
+
+@theme {
+  --font-sans: "Noto Sans Thai", "Sarabun", "Leelawadee UI", system-ui, sans-serif;
+  --color-ink: #172b2b;
+  --color-muted: #667875;
+  --color-primary: #177a67;
+  --color-primary-dark: #0d5e50;
+  --color-canvas: #f6f8f5;
+  --color-line: #e4eae6;
+}
+
+html, :root { scroll-behavior: smooth; color-scheme: light !important; }
+body { margin: 0; background: var(--color-canvas); color: var(--color-ink); font-family: var(--font-sans); }
+button, input, select, textarea { font: inherit; }
+select option { background-color: #ffffff; color: var(--color-ink); font-weight: normal; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid #54b99e; outline-offset: 3px; }
+::selection { background: #b8e8d9; color: #123b33; }
+.scrollbar-thin { scrollbar-width: thin; scrollbar-color: #b8c9c0 transparent; }
+.panel-shadow { box-shadow: 0 9px 32px rgba(26, 61, 52, .045); }
+.nav-active { background: #e9f5ef; color: #0d6d57; }
+.field { width: 100%; min-height: 44px; border: 1px solid #d7e1dc; border-radius: 12px; background: #fff; padding: 10px 14px; color: #172b2b; outline: none; transition: border-color .18s, box-shadow .18s; color-scheme: light !important; }
+select.field { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667875' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 14px center; background-size: 16px; padding-right: 40px; }
+.field:focus { border-color: #199778; box-shadow: 0 0 0 3px #d6f3e8; }
+.field[aria-invalid="true"] { border-color: #dc5f57; }
+.field::placeholder { color: #9aa9a3; }
+.fade-in { animation: fade-in .24s ease-out; }
+@keyframes fade-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .fade-in { animation: none; } * { transition-duration: .01ms !important; } }
