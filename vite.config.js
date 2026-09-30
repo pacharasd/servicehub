@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/Servicehub/dist/' : '/',
+  base: command === 'build' ? './' : '/',
   publicDir: false,
   build: {
     outDir: 'public/dist',

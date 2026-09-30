@@ -24,6 +24,7 @@
         ]) !!};
         @php
             $serviceHubUrls = [
+                'logo' => asset('images/nonthaburi-logo.png'),
                 'login' => route('login'),
                 'logout' => route('logout'),
                 'apiUsers' => route('api.users.index'),

@@ -1,6 +1,8 @@
 import './style.css';
-import logoUrl from './assets/nonthaburi-logo.png';
+import fallbackLogoUrl from './assets/nonthaburi-logo.png';
 import { groups, modules } from './data.js';
+
+const logoUrl = window.serviceHubUrls?.logo || fallbackLogoUrl;
 
 const ZONE_HREF = '#/cleaning-zones';
 const WASTE_TYPE_HREF = '#/waste-types';
