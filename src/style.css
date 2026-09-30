@@ -1,8 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
 @import "tailwindcss";
 @source "./main.js";
 
 @theme {
-  --font-sans: "Noto Sans Thai", "Sarabun", "Leelawadee UI", system-ui, sans-serif;
+  --font-sans: "Sarabun", "Noto Sans Thai", "Leelawadee UI", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --color-ink: #172b2b;
   --color-muted: #667875;
   --color-primary: #177a67;
@@ -40,9 +41,19 @@ body {
   background: var(--color-canvas);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  line-height: 1.6;
+  letter-spacing: 0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 }
-button, input, select, textarea { font: inherit; }
+button, input, select, textarea {
+  font-family: var(--font-sans);
+  font: inherit;
+}
+table, th, td {
+  font-variant-numeric: tabular-nums;
+}
 select option { background-color: #ffffff; color: var(--color-ink); font-weight: normal; }
 
 html, body, #app {
