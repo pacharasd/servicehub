@@ -1,5 +1,4 @@
 node_modules/
-/vendor/
 /.env
 /.env.*
 !/.env.example
@@ -18,4 +17,4 @@ node_modules/
 .phpunit.result.cache
 .agents/
 servicehub_dist.zip
-
+vendor.zip
