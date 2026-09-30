@@ -1,12 +1,26 @@
-RewriteEngine On
-RewriteRule ^(?:\.env(?:\..*)?|vendor|app|bootstrap|config|database|routes|storage|tests|resources|public)(?:/|$) - [F,L,NC]
-RewriteRule ^(?:artisan|composer\.(?:json|lock)|phpunit\.xml)$ - [F,L,NC]
-RewriteRule ^$ /Servicehub/dist/ [R=302,L]
-RewriteRule ^(?:\.git|node_modules|src)(?:/|$) - [F,L,NC]
-RewriteRule ^(?:AGENT\.md|FRONTEND\.md|package(?:-lock)?\.json|vite\.config\.js|index\.html)$ - [F,L,NC]
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
 
-<IfModule mod_headers.c>
-  Header set Cache-Control "no-cache, no-store, must-revalidate"
-  Header set Pragma "no-cache"
-  Header set Expires 0
+    RewriteEngine On
+
+    # Block direct access to protected directories and files
+    RewriteRule ^(?:\.env(?:\..*)?|\.git|vendor|storage|bootstrap/cache|app|config|database|routes|tests)(?:/|$) - [F,L,NC]
+    RewriteRule ^(?:artisan|composer\.(?:json|lock)|phpunit\.xml)$ - [F,L,NC]
+
+    # Redirect obsolete /Servicehub or /Servicehub/dist URLs to root (for production domain)
+    RewriteCond %{HTTP_HOST} !^localhost [NC]
+    RewriteRule ^Servicehub(?:/.*)?$ / [R=301,L,NC]
+
+    # Block direct access to obsolete demo files so visitors cannot bypass login
+    RewriteRule ^(?:dist(?:/index\.html)?|index\.html)$ / [R=301,L,NC]
+
+    # Pass Authorization Header to PHP
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Send Requests To Public Directory (so Laravel handles authentication and routing)
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>

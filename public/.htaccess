@@ -13,17 +13,24 @@
     RewriteCond %{HTTP:x-xsrf-token} .
     RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
 
+    # On production (not localhost), redirect legacy /Servicehub prefix to root
+    RewriteCond %{HTTP_HOST} !^localhost [NC]
+    RewriteCond %{REQUEST_URI} ^/Servicehub [NC]
+    RewriteRule ^ / [R=301,L]
+
     # Redirect Trailing Slashes If Not A Folder...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Send Requests To Front Controller...
+    # Send Requests To Front Controller on localhost (with /Servicehub alias)...
+    RewriteCond %{HTTP_HOST} ^localhost [NC]
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_URI} ^/Servicehub [NC]
     RewriteRule ^ /Servicehub/index.php [L]
 
+    # Standard Laravel Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
