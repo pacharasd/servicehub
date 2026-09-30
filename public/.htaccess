@@ -4,10 +4,6 @@
     </IfModule>
 
     RewriteEngine On
-    RewriteBase /Servicehub/
-
-    # Never serve the generated application shell without Laravel authentication.
-    RewriteRule ^dist(?:/index\.html|/)?$ - [F,L,NC]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
@@ -23,6 +19,11 @@
     RewriteRule ^ %1 [L,R=301]
 
     # Send Requests To Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_URI} ^/Servicehub [NC]
+    RewriteRule ^ /Servicehub/index.php [L]
+
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
