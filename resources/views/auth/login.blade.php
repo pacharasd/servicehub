@@ -1,0 +1,20 @@
+@extends('auth.layout')
+@section('title', 'เข้าสู่ระบบ')
+@section('content')
+<div class="max-w-md">
+    <p class="text-xs font-bold tracking-[.15em] text-[#177a67]">ยินดีต้อนรับ</p>
+    <h1 class="mt-3 text-[28px] font-bold leading-tight sm:text-[34px]">เข้าสู่ระบบ</h1>
+    <p class="mt-3 text-sm leading-6 text-[#667a71]">กรอกชื่อผู้ใช้และรหัสผ่านเพื่อเข้าสู่ระบบส่วนบริการ</p>
+    @if ($errors->any()) <div role="alert" class="mt-6 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง หรือไม่สามารถเข้าสู่ระบบได้ในขณะนี้</div> @endif
+    <form method="POST" action="{{ route('login.store') }}" class="mt-8 space-y-5">
+        @csrf
+        <div><label for="username" class="mb-2 block text-sm font-semibold">ชื่อผู้ใช้</label><input id="username" name="username" type="text" autocomplete="username" required autofocus value="{{ old('username') }}" class="field w-full" placeholder="กรอกชื่อผู้ใช้"></div>
+        <div><label for="password" class="mb-2 block text-sm font-semibold">รหัสผ่าน</label><div class="relative"><input id="password" name="password" type="password" autocomplete="current-password" required class="field w-full pr-20" placeholder="กรอกรหัสผ่าน"><button type="button" id="toggle-password" aria-controls="password" aria-pressed="false" class="absolute inset-y-1 right-1 rounded-lg px-3 text-xs font-bold text-[#0e6253]">แสดง</button></div></div>
+        <p class="text-xs text-[#667a71]">ลืมรหัสผ่าน? ติดต่อผู้ดูแลระบบ</p>
+        <button type="submit" class="min-h-12 w-full rounded-xl bg-[#177a67] px-5 text-sm font-bold text-white hover:bg-[#0e6253]">เข้าสู่ระบบ</button>
+    </form>
+</div>
+@endsection
+@section('scripts')
+<script>document.getElementById('toggle-password').addEventListener('click', function () { const input = document.getElementById('password'); const showing = input.type === 'password'; input.type = showing ? 'text' : 'password'; this.textContent = showing ? 'ซ่อน' : 'แสดง'; this.setAttribute('aria-pressed', String(showing)); });</script>
+@endsection

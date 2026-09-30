@@ -11,17 +11,124 @@
   --color-line: #e4eae6;
 }
 
-html, :root { scroll-behavior: smooth; color-scheme: light !important; }
-body { margin: 0; background: var(--color-canvas); color: var(--color-ink); font-family: var(--font-sans); }
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, :root {
+  scroll-behavior: smooth;
+  color-scheme: light !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  inline-size: 100%;
+  max-inline-size: 100%;
+  overflow-x: clip !important;
+  overflow-x: hidden !important;
+  overscroll-behavior-x: none;
+}
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  inline-size: 100%;
+  max-inline-size: 100%;
+  overflow-x: clip !important;
+  overflow-x: hidden !important;
+  position: relative;
+  overscroll-behavior-x: none;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-text-size-adjust: 100%;
+}
 button, input, select, textarea { font: inherit; }
 select option { background-color: #ffffff; color: var(--color-ink); font-weight: normal; }
+
+html, body, #app {
+  width: 100% !important;
+  max-width: 100% !important;
+  inline-size: 100%;
+  max-inline-size: 100%;
+}
+#app, .app-shell, #main-content {
+  box-sizing: border-box;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  inline-size: 100%;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  overflow-x: hidden;
+}
+.app-shell {
+  padding-left: 0;
+}
+@media (min-width: 1024px) {
+  .app-shell {
+    padding-left: 266px;
+  }
+}
+.app-header, .app-content, .login-content {
+  box-sizing: border-box;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  inline-size: 100%;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+.app-header > div, .app-header nav { min-width: 0; min-inline-size: 0; }
+.app-content { max-width: min(100%, 1510px); max-inline-size: min(100%, 1510px); }
+.app-content > *, .login-content > *, .dashboard-summary > *, .dashboard-panels > * {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  min-inline-size: 0;
+}
+.dashboard-summary > *, .dashboard-panels > * { max-width: 100%; max-inline-size: 100%; }
+.dashboard-summary, .dashboard-panels {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  inline-size: 100%;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+.login-card { width: 100%; min-width: 0; max-width: min(100%, 1180px); inline-size: 100%; max-inline-size: min(100%, 1180px); min-inline-size: 0; }
+.dashboard-card { box-sizing: border-box; width: 100%; max-width: 100%; inline-size: 100%; max-inline-size: 100%; }
+.app-toast { box-sizing: border-box; max-width: min(24rem, calc(100% - 2rem)); max-inline-size: min(24rem, calc(100% - 2rem)); overflow-wrap: anywhere; }
+.app-dialog [data-dialog] { box-sizing: border-box; max-width: min(100%, 28rem); max-inline-size: min(100%, 28rem); overflow-wrap: anywhere; }
+.app-toast > *, .app-dialog [data-dialog] > * { min-width: 0; min-inline-size: 0; }
+.app-content, .login-content { overflow-wrap: anywhere; }
+.app-content .grid, .app-content .grid > * { min-width: 0; max-width: 100%; min-inline-size: 0; max-inline-size: 100%; }
+#main-content :is(h1, h2, h3, p, dt, dd) { overflow-wrap: anywhere; }
+#main-content form, #main-content :is(input, select, textarea) { min-width: 0; max-width: 100%; min-inline-size: 0; max-inline-size: 100%; }
+.data-table-scroll {
+  display: block !important;
+  box-sizing: border-box;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  inline-size: 100%;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+  overflow-x: auto !important;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  contain: inline-size;
+}
+@media (max-width: 639px) {
+  .dashboard-summary { grid-template-columns: minmax(0, 1fr); }
+}
 button { cursor: pointer; }
 :focus-visible { outline: 3px solid #54b99e; outline-offset: 3px; }
 ::selection { background: #b8e8d9; color: #123b33; }
 .scrollbar-thin { scrollbar-width: thin; scrollbar-color: #b8c9c0 transparent; }
-.panel-shadow { box-shadow: 0 9px 32px rgba(26, 61, 52, .045); }
+.panel-shadow { width: 100% !important; max-width: 100% !important; min-width: 0 !important; box-sizing: border-box !important; box-shadow: 0 9px 32px rgba(26, 61, 52, .045); }
 .nav-active { background: #e9f5ef; color: #0d6d57; }
-.field { width: 100%; min-height: 44px; border: 1px solid #d7e1dc; border-radius: 12px; background: #fff; padding: 10px 14px; color: #172b2b; outline: none; transition: border-color .18s, box-shadow .18s; color-scheme: light !important; }
+.field { width: 100%; min-width: 0; max-width: 100%; min-height: 44px; border: 1px solid #d7e1dc; border-radius: 12px; background: #fff; padding: 10px 14px; color: #172b2b; outline: none; transition: border-color .18s, box-shadow .18s; color-scheme: light !important; }
 select.field { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667875' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 14px center; background-size: 16px; padding-right: 40px; }
 .field:focus { border-color: #199778; box-shadow: 0 0 0 3px #d6f3e8; }
 .field[aria-invalid="true"] { border-color: #dc5f57; }

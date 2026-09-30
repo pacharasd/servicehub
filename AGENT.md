@@ -12,7 +12,7 @@
 - ใช้งานง่ายบน Desktop / Tablet / Mobile
 - Front-end ใช้ **Tailwind CSS เป็นหลัก**
 - Back-end ใช้ **Laravel เป็นหลัก**
-- มีระบบ Authentication: Login / Logout / Forgot Password / Reset Password
+- มีระบบ Authentication: Login / Logout ด้วยชื่อผู้ใช้; ผู้ลืมรหัสผ่านติดต่อผู้ดูแลเครื่องตามขอบเขตปัจจุบัน
 - มีระบบ Authorization แบบ **Role-Based Access Control (RBAC)**
 - มีระบบ CRUD ทุกโมดูลตามสิทธิ์
 - มี Search / Filter / Sort / Pagination
@@ -34,8 +34,11 @@
 
 ### Backend
 
-- PHP 8.3+
-- Laravel 13.x หรือ Stable version ที่โครงการล็อกไว้ใน `composer.lock`
+- PHP 8.2 (XAMPP)
+- Laravel 12.x ตาม `composer.lock`
+
+> สถานะปัจจุบัน: ฐาน `servicehub` บน XAMPP รองรับ CRUD งานบริการ 9 หมวดและข้อมูลหลัก 5 ชุดผ่าน API ที่ป้องกันด้วย session/สิทธิ์แล้ว หน้าเว็บไม่อ่าน `localStorage` เพื่อแสดงข้อมูลบริการอีกต่อไป ข้อมูลเดิมในเบราว์เซอร์ไม่ได้ย้ายเข้าฐาน
+
 - Eloquent ORM
 - Form Request Validation
 - Laravel Policies / Gates
@@ -51,13 +54,12 @@
 
 - Login
 - Logout
-- Forgot password
-- Reset password
+- การกู้บัญชีผ่านคำสั่งผู้ดูแลเครื่อง (ยังไม่มีการรีเซ็ตผ่านอีเมล)
 - Password confirmation สำหรับ action สำคัญ
 - Email verification หากระบบเปิดให้ผู้ใช้สมัครเอง
 - Login throttling / rate limiting
 - Session invalidation เมื่อเปลี่ยนรหัสผ่านหรือพบความเสี่ยง
-- 2FA สำหรับ `super-admin` และ `admin` ควรเปิดใช้งานเมื่อระบบขึ้น Production
+- ขอบเขตปัจจุบันไม่ใช้ Authenticator/TOTP หรือรหัสกู้คืนกับทุกบทบาท หากจะเปิดใช้ปัจจัยยืนยันตัวตนเพิ่มในอนาคตต้องมี Requirement ใหม่
 
 > หากระบบเป็นระบบภายในองค์กรและผู้ดูแลเป็นผู้สร้างบัญชีให้ ห้ามเปิด Public Registration โดยไม่มี Requirement ที่อนุมัติ
 
@@ -223,7 +225,7 @@ resources/
 
 ### 5.2 งานบริการมูลฝอย
 
-#### 5.2.1 มูลฝอยทั่วไป
+#### 5.2.1 งานบริหารจัดการมูลฝอย (เดิม: มูลฝอยทั่วไป)
 
 ข้อมูลขั้นต่ำ:
 
@@ -397,6 +399,7 @@ created_at
 - Logout ด้วย POST
 - Generic error message เพื่อไม่เปิดเผยว่ามีบัญชี email/username นั้นหรือไม่
 - Password hashing ผ่าน Laravel `Hash` เท่านั้น
+- ผู้ดูแลสร้างหรือรีเซ็ตรหัสผ่านด้วยความยาวอย่างน้อย 15 ตัวอักษร สูงสุด 128 ตัวอักษร เช่นเดียวกับคำสั่งผู้ดูแลเครื่อง
 
 ห้าม:
 

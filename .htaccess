@@ -1,4 +1,12 @@
 RewriteEngine On
+RewriteRule ^(?:\.env(?:\..*)?|vendor|app|bootstrap|config|database|routes|storage|tests|resources|public)(?:/|$) - [F,L,NC]
+RewriteRule ^(?:artisan|composer\.(?:json|lock)|phpunit\.xml)$ - [F,L,NC]
 RewriteRule ^$ /Servicehub/dist/ [R=302,L]
 RewriteRule ^(?:\.git|node_modules|src)(?:/|$) - [F,L,NC]
 RewriteRule ^(?:AGENT\.md|FRONTEND\.md|package(?:-lock)?\.json|vite\.config\.js|index\.html)$ - [F,L,NC]
+
+<IfModule mod_headers.c>
+  Header set Cache-Control "no-cache, no-store, must-revalidate"
+  Header set Pragma "no-cache"
+  Header set Expires 0
+</IfModule>
