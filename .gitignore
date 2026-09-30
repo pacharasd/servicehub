@@ -1,6 +1,5 @@
 node_modules/
 /vendor/
-/public/dist/
 /.env
 /.env.*
 !/.env.example
