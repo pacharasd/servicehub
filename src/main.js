@@ -2,6 +2,7 @@ import './style.css';
 import fallbackLogoUrl from './assets/nonthaburi-logo.png';
 import { groups, modules } from './data.js';
 import { dashboardContent } from './dashboard.js';
+import { reportBody } from './reports.js';
 
 const logoUrl = window.serviceHubUrls?.logo || fallbackLogoUrl;
 
@@ -89,6 +90,11 @@ let overviewError = '';
 let overviewRequest = 0;
 let liveDataLoaded = false;
 let reportData = {};
+let reportDetail = null;
+let reportMeta = null;
+let reportLoading = false;
+let reportError = '';
+let reportRequest = 0;
 let auditRows = [];
 let auditMeta = { current_page: 1, last_page: 1 };
 let loadError = '';
@@ -519,10 +525,11 @@ function notFound() {
 
 
 
-function reportsPage(params) {
-  const from = params.get('from') || '';
-  const to = params.get('to') || '';
-  return shell(`${pageHeading('ภาพรวมระบบ', 'รายงาน', 'ยอดจากฐานข้อมูล แยกปริมาณตามหน่วยวัด')}<section class="panel-shadow rounded-2xl border border-line bg-white p-5"><form id="report-filter" class="flex flex-wrap items-end gap-3"><div><label for="report-from" class="block text-sm">ตั้งแต่วันที่</label><input id="report-from" class="field" type="date" name="from" value="${esc(from)}"></div><div><label for="report-to" class="block text-sm">ถึงวันที่</label><input id="report-to" class="field" type="date" name="to" value="${esc(to)}"></div><button class="min-h-11 rounded-xl bg-primary px-5 text-white">แสดงรายงาน</button></form></section><div class="mt-5 grid gap-4 sm:grid-cols-2">${modules.filter(m => can(`${m.id}.view`)).map(m => { const item = reportData[m.id] || { count: 0, quantities: {} }; const exportUrl = apiActivity(m.id) + '/export?' + new URLSearchParams({ from, to }); return `<section class="panel-shadow rounded-2xl border border-line bg-white p-5"><h2 class="font-bold">${esc(m.short)}</h2><p class="mt-2">${number(item.count)} รายการ</p>${Object.entries(item.quantities || {}).map(([field, groups]) => `<p class="mt-2 text-sm text-muted">${esc(m.fields.find(f => f.name === field)?.label || field)}: ${groups.map(g => `${number(g.total)} ${esc(g.symbol || g.unit || g.name)}`).join(', ') || '—'}</p>`).join('')}${can(`${m.id}.export`) ? `<a class="mt-4 inline-block text-sm font-bold text-primary underline" href="${esc(exportUrl)}">ส่งออก CSV</a>` : ''}</section>`; }).join('')}</div>`, 'reports', [{ label: 'รายงาน', current: true }]);
+function reportsPage(parts, params) {
+  const module = parts[1] ? moduleById(parts[1]) : null;
+  if (parts.length > 2 || (parts[1] && (!module || !can(`${module.id}.view`)))) return notFound();
+  const body = reportBody({ module, params, data: module ? reportDetail : reportData, meta: reportMeta, loading: reportLoading, error: reportError, modules, groups, can, esc, number, thaiDate, moduleHref });
+  return shell(body, 'reports', module ? [{ label: 'รายงาน', href: '#/reports' }, { label: module.short, current: true }] : [{ label: 'รายงาน', current: true }]);
 }
 
 function auditPage(params) {
@@ -533,11 +540,30 @@ function auditPage(params) {
 
 async function loadReportAndAudit() {
   const { parts, params } = route();
+  if (parts[0] === 'reports') {
+    const module = parts[1] ? moduleById(parts[1]) : null;
+    if (parts.length > 2 || (parts[1] && (!module || !can(`${module.id}.view`)))) return;
+    const requestId = ++reportRequest;
+    reportLoading = true;
+    reportError = '';
+    render();
+    try {
+      const url = module ? window.serviceHubUrls.apiReportDetail.replace('__MODULE__', encodeURIComponent(module.id)) : window.serviceHubUrls.apiReports;
+      const result = await apiRequest(url + (params.size ? `?${params}` : ''));
+      if (requestId !== reportRequest || route().parts.join('/') !== parts.join('/')) return;
+      reportMeta = result.meta;
+      if (module) reportDetail = result.data;
+      else reportData = result.data;
+    } catch (error) {
+      if (requestId !== reportRequest) return;
+      reportError = error.fields?.to?.[0] || error.fields?.from?.[0] || error.fields?.month?.[0] || error.message || 'โหลดรายงานไม่สำเร็จ';
+    } finally {
+      if (requestId === reportRequest) { reportLoading = false; render(); }
+    }
+    return;
+  }
   try {
-    if (parts[0] === 'reports') {
-      const result = await apiRequest(window.serviceHubUrls.apiReports + '?' + params.toString());
-      reportData = result.data;
-    } else if (parts[0] === 'audit-logs' && can('audit-logs.view')) {
+    if (parts[0] === 'audit-logs' && can('audit-logs.view')) {
       const result = await apiRequest(window.serviceHubUrls.apiAudit + '?' + params.toString());
       auditRows = result.data;
       auditMeta = result.meta;
@@ -1363,7 +1389,7 @@ function render() {
       setTimeout(() => { umFetchUsers(); if (!umState.roles.length) umFetchRoles(); }, 0);
     }
   } else if (parts[0] === 'dashboard' || !parts.length) markup = dashboard();
-  else if (parts[0] === 'reports') markup = reportsPage(params);
+  else if (parts[0] === 'reports') markup = reportsPage(parts, params);
   else if (parts[0] === 'audit-logs') markup = auditPage(params);
   else if (!liveDataLoaded && ((module && can(`${module.id}.view`)) || (parts[0] in referenceKinds && can(`${parts[0]}.view`)))) {
     markup = shell(`<div class="panel-shadow rounded-2xl border border-line bg-white p-6 text-sm text-muted" ${loadError ? 'role="alert"' : 'role="status"'}>${loadError ? 'ไม่สามารถโหลดรายการงานบริการได้' : 'กำลังโหลดรายการงานบริการ…'}${loadError ? '<button type="button" data-action="retry-live-data" class="ml-3 min-h-11 rounded-xl border border-line px-3 font-semibold text-primary">ลองอีกครั้ง</button>' : ''}</div>`, module?.id || parts[0]);
@@ -1406,7 +1432,7 @@ function render() {
     if (!can(`${resource}.delete`)) app.querySelectorAll('[data-action="delete"], [data-action="delete-zone"], [data-action="delete-waste-type"], [data-action="delete-reference"]').forEach(button => button.remove());
   }
   syncMobileNavigation();
-  document.title = `${parts[0] === 'login' ? 'เข้าสู่ระบบ' : parts[0] === 'profile' ? 'โปรไฟล์ส่วนบุคคล' : parts[0] === 'cleaning-zones' ? 'เขตรักษาความสะอาด' : parts[0] === 'waste-types' ? 'ประเภทขยะมูลฝอย' : module?.short || 'แดชบอร์ดส่วนบริการ'} — ServiceHub`;
+  document.title = `${parts[0] === 'reports' ? (moduleById(parts[1])?.short || 'รายงาน') : parts[0] === 'login' ? 'เข้าสู่ระบบ' : parts[0] === 'profile' ? 'โปรไฟล์ส่วนบุคคล' : parts[0] === 'cleaning-zones' ? 'เขตรักษาความสะอาด' : parts[0] === 'waste-types' ? 'ประเภทขยะมูลฝอย' : module?.short || 'แดชบอร์ดส่วนบริการ'} — ServiceHub`;
   if (pendingDelete) document.querySelector('[data-dialog] button[data-action="cancel-delete"]')?.focus();
   initCustomSelects();
 }
@@ -1517,10 +1543,35 @@ document.addEventListener('submit', (event) => {
     else location.hash = next;
     return;
   }
-  if (event.target.id === 'report-filter' || event.target.id === 'audit-filter') {
+  if (event.target.id === 'report-filter') {
+    event.preventDefault();
+    const form = event.target;
+    const mode = form.elements.period_mode.value;
+    const params = new URLSearchParams();
+    if (mode === 'month') {
+      if (!form.elements.month.value) return;
+      params.set('month', form.elements.month.value);
+    } else {
+      const from = form.elements.from.value;
+      const to = form.elements.to.value;
+      const error = form.querySelector('#report-filter-error');
+      if (!from || !to || from > to) {
+        error.textContent = !from || !to ? 'กรุณาระบุวันที่เริ่มต้นและสิ้นสุด' : 'วันสิ้นสุดต้องไม่ก่อนวันเริ่มต้น';
+        return;
+      }
+      error.textContent = '';
+      params.set('from', from);
+      params.set('to', to);
+    }
+    const target = `#/reports${form.dataset.reportModule ? `/${form.dataset.reportModule}` : ''}?${params}`;
+    if (location.hash === target) loadReportAndAudit();
+    else location.hash = target;
+    return;
+  }
+  if (event.target.id === 'audit-filter') {
     event.preventDefault();
     const params = new URLSearchParams(new FormData(event.target));
-    navigate(`/${event.target.id === 'report-filter' ? 'reports' : 'audit-logs'}?${params}`);
+    navigate(`/audit-logs?${params}`);
     loadReportAndAudit();
     return;
   }
@@ -1581,6 +1632,8 @@ document.addEventListener('click', (event) => {
   const trigger = event.target.closest('[data-action]');
   if (!trigger) return;
   const action = trigger.dataset.action;
+  if (action === 'print-report') { window.print(); return; }
+  if (action === 'retry-report') { loadReportAndAudit(); return; }
   if (action === 'retry-dashboard') { loadDashboard(); return; }
   if (action === 'retry-live-data') { refreshLiveData(); return; }
   if (action === 'toggle-user-menu') {
@@ -1668,6 +1721,17 @@ document.addEventListener('click', (event) => {
   }
 });
 
+document.addEventListener('change', (event) => {
+  if (event.target.name !== 'period_mode' || !event.target.closest('#report-filter')) return;
+  const form = event.target.form;
+  const custom = event.target.value === 'custom';
+  form.querySelector('[data-report-month]').hidden = custom;
+  form.querySelector('[data-report-custom]').hidden = !custom;
+  form.elements.month.disabled = custom;
+  form.elements.from.disabled = !custom;
+  form.elements.to.disabled = !custom;
+});
+
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && userMenuOpen) { userMenuOpen = false; render(); document.querySelector('#user-menu-button')?.focus(); return; }
   if (event.key === 'Escape' && pendingDelete) { pendingDelete = null; render(); document.querySelector('[data-action="delete-waste-type"], [data-action="delete-zone"], [data-action="delete"]')?.focus(); }
@@ -1694,7 +1758,7 @@ window.addEventListener('hashchange', () => {
   render();
   const { parts } = route();
   if (parts[0] === 'dashboard' || !parts.length) loadDashboard();
-  else if (!liveDataLoaded) refreshLiveData();
+  else if (!liveDataLoaded && ((parts[0] === 'module' && moduleById(parts[1])) || parts[0] in referenceKinds)) refreshLiveData();
   loadReportAndAudit();
 });
 document.addEventListener('click', (e) => {
@@ -1709,6 +1773,6 @@ document.addEventListener('click', (e) => {
 expandActiveSidebarGroup();
 render();
 if (route().parts[0] === 'dashboard' || !route().parts.length) loadDashboard();
-else refreshLiveData();
+else if ((route().parts[0] === 'module' && moduleById(route().parts[1])) || route().parts[0] in referenceKinds) refreshLiveData();
 loadReportAndAudit();
 

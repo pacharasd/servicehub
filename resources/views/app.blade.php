@@ -35,6 +35,9 @@
                 'apiReferences' => route('api.references.index', ['type' => '__TYPE__']),
                 'apiDashboard' => route('api.dashboard'),
                 'apiReports' => route('api.reports'),
+                'apiReportsExport' => route('api.reports.export'),
+                'apiReportDetail' => route('api.reports.detail', ['module' => '__MODULE__']),
+                'apiReportDetailExport' => route('api.reports.detail.export', ['module' => '__MODULE__']),
                 'apiAudit' => route('api.audit-logs'),
             ];
         @endphp

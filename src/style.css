@@ -148,3 +148,42 @@ select.field { appearance: none; background-image: url("data:image/svg+xml;chars
 .fade-in { animation: fade-in .24s ease-out; }
 @keyframes fade-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .fade-in { animation: none; } * { transition-duration: .01ms !important; } }
+
+@media print {
+  #sidebar,
+  #mobile-backdrop,
+  header,
+  .app-toast,
+  .no-print,
+  button,
+  [data-action] {
+    display: none !important;
+  }
+
+  body, #app, .app-shell, #main-content, .report-page {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    background: #fff !important;
+    color: #172b2b !important;
+  }
+
+  .app-shell {
+    padding-left: 0 !important;
+  }
+
+  .panel-shadow {
+    box-shadow: none !important;
+    border: 1px solid #d7e1dc !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 1rem !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

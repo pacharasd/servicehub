@@ -16,6 +16,9 @@ Route::middleware(['web', 'auth', EnsureActiveAccount::class])->group(function (
 
     Route::get('/dashboard', [ServiceOverviewController::class, 'dashboard'])->name('api.dashboard');
     Route::get('/reports', [ServiceOverviewController::class, 'report'])->name('api.reports');
+    Route::get('/reports/export', [ServiceOverviewController::class, 'reportExport'])->name('api.reports.export');
+    Route::get('/reports/{module}/export', [ServiceOverviewController::class, 'reportDetailExport'])->name('api.reports.detail.export');
+    Route::get('/reports/{module}', [ServiceOverviewController::class, 'reportDetail'])->name('api.reports.detail');
     Route::get('/audit-logs', [ServiceOverviewController::class, 'audit'])->name('api.audit-logs');
     Route::get('/activities/{module}/export', [ServiceRecordController::class, 'export'])->name('api.activities.export');
     Route::get('/activities/{module}', [ServiceRecordController::class, 'index'])->name('api.activities.index');

@@ -86,8 +86,8 @@ class SampleDataSeeder extends Seeder
                     'distance_km' => $row['distance_km'],
                     'created_by' => $adminId,
                     'updated_by' => $adminId,
-                    'created_at' => $date . ' 08:30:00',
-                    'updated_at' => $date . ' 16:30:00',
+                    'created_at' => $date.' 08:30:00',
+                    'updated_at' => $date.' 16:30:00',
                 ]
             );
         }
@@ -114,8 +114,8 @@ class SampleDataSeeder extends Seeder
                     'quantity' => $row['quantity'],
                     'created_by' => $adminId,
                     'updated_by' => $adminId,
-                    'created_at' => $date . ' 09:00:00',
-                    'updated_at' => $date . ' 17:00:00',
+                    'created_at' => $date.' 09:00:00',
+                    'updated_at' => $date.' 17:00:00',
                 ]
             );
         }
@@ -142,8 +142,8 @@ class SampleDataSeeder extends Seeder
                     'distance_km' => $row['distance_km'],
                     'created_by' => $adminId,
                     'updated_by' => $adminId,
-                    'created_at' => $date . ' 05:30:00',
-                    'updated_at' => $date . ' 11:30:00',
+                    'created_at' => $date.' 05:30:00',
+                    'updated_at' => $date.' 11:30:00',
                 ]
             );
         }
@@ -168,8 +168,8 @@ class SampleDataSeeder extends Seeder
                     'community' => $row['community'],
                     'created_by' => $adminId,
                     'updated_by' => $adminId,
-                    'created_at' => $date . ' 08:00:00',
-                    'updated_at' => $date . ' 17:00:00',
+                    'created_at' => $date.' 08:00:00',
+                    'updated_at' => $date.' 17:00:00',
                 ]
             );
         }
@@ -200,8 +200,8 @@ class SampleDataSeeder extends Seeder
                     'weight' => $row['weight'],
                     'created_by' => $adminId,
                     'updated_by' => $adminId,
-                    'created_at' => $date . ' 06:00:00',
-                    'updated_at' => $date . ' 14:00:00',
+                    'created_at' => $date.' 06:00:00',
+                    'updated_at' => $date.' 14:00:00',
                 ]
             );
         }
@@ -226,8 +226,8 @@ class SampleDataSeeder extends Seeder
                     'sediment_quantity' => $row['sediment_quantity'],
                     'created_by' => $adminId,
                     'updated_by' => $adminId,
-                    'created_at' => $date . ' 08:30:00',
-                    'updated_at' => $date . ' 16:30:00',
+                    'created_at' => $date.' 08:30:00',
+                    'updated_at' => $date.' 16:30:00',
                 ]
             );
         }
@@ -252,8 +252,8 @@ class SampleDataSeeder extends Seeder
                     'fee_amount' => $row['fee_amount'],
                     'created_by' => $adminId,
                     'updated_by' => $adminId,
-                    'created_at' => $date . ' 09:15:00',
-                    'updated_at' => $date . ' 15:45:00',
+                    'created_at' => $date.' 09:15:00',
+                    'updated_at' => $date.' 15:45:00',
                 ]
             );
         }
@@ -276,8 +276,8 @@ class SampleDataSeeder extends Seeder
                     'microbial_note' => $row['microbial_note'],
                     'created_by' => $adminId,
                     'updated_by' => $adminId,
-                    'created_at' => $date . ' 10:00:00',
-                    'updated_at' => $date . ' 16:00:00',
+                    'created_at' => $date.' 10:00:00',
+                    'updated_at' => $date.' 16:00:00',
                 ]
             );
         }
@@ -301,8 +301,8 @@ class SampleDataSeeder extends Seeder
                     'participants_count' => $row['participants_count'],
                     'created_by' => $adminId,
                     'updated_by' => $adminId,
-                    'created_at' => $date . ' 09:00:00',
-                    'updated_at' => $date . ' 15:00:00',
+                    'created_at' => $date.' 09:00:00',
+                    'updated_at' => $date.' 15:00:00',
                 ]
             );
         }
@@ -329,7 +329,7 @@ class SampleDataSeeder extends Seeder
                 'after' => json_encode(['note' => $act['details']], JSON_UNESCAPED_UNICODE),
                 'ip_address' => '127.0.0.1',
                 'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) ServiceHub/1.0',
-                'created_at' => $date . ' 11:' . sprintf('%02d', 10 + $i * 5) . ':00',
+                'created_at' => $date.' 11:'.sprintf('%02d', 10 + $i * 5).':00',
             ]);
         }
     }

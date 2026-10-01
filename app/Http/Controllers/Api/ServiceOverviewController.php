@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Support\ServiceAudit;
 use App\Support\ServiceCatalog;
+use App\Support\ServiceReports;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ServiceOverviewController extends Controller
 {
@@ -113,40 +116,71 @@ class ServiceOverviewController extends Controller
         return $count;
     }
 
-    public function report(Request $request): JsonResponse
+    public function report(Request $request, ServiceReports $reports): JsonResponse
     {
-        $filters = $request->validate(['from' => 'nullable|date_format:Y-m-d', 'to' => 'nullable|date_format:Y-m-d']);
-        $result = [];
-        foreach (ServiceCatalog::ACTIVITIES as $module => $definition) {
-            if (! $request->user()->can($module.'.view')) {
-                continue;
-            }
-            $query = DB::table($definition['table'])->whereNull('deleted_at');
-            if (! empty($filters['from'])) {
-                $query->whereDate('service_date', '>=', $filters['from']);
-            }
-            if (! empty($filters['to'])) {
-                $query->whereDate('service_date', '<=', $filters['to']);
-            }
-            $item = ['count' => (clone $query)->count(), 'quantities' => []];
-            foreach ($definition['fields'] as $column => $kind) {
-                if ($kind !== 'decimal') {
-                    continue;
-                }
-                $unit = match ($column) {
-                    'distance_km' => 'กม.',
-                    'quantity', 'weight' => 'ตัน',
-                    'sediment_quantity', 'volume' => 'ลบ.ม.',
-                    'sludge_quantity', 'fertilizer_remaining' => 'กก.',
-                    'fee_amount' => 'บาท',
-                    default => '',
-                };
-                $item['quantities'][$column] = [['unit' => $unit, 'total' => (clone $query)->sum($column)]];
-            }
-            $result[$module] = $item;
-        }
+        $period = $reports->period($request);
 
-        return response()->json(['data' => $result]);
+        return response()->json($reports->summary($request, $period));
+    }
+
+    public function reportDetail(Request $request, string $module, ServiceReports $reports): JsonResponse
+    {
+        ServiceCatalog::activity($module);
+        abort_unless($request->user()->can($module.'.view'), 403);
+        $period = $reports->period($request);
+
+        return response()->json([
+            'data' => $reports->detail($module, $period),
+            'meta' => [
+                'period' => ['from' => $period['from'], 'to' => $period['to']],
+                'comparison' => ['from' => $period['comparison_from'], 'to' => $period['comparison_to']],
+                'mode' => $period['mode'],
+            ],
+        ]);
+    }
+
+    public function reportExport(Request $request, ServiceReports $reports): StreamedResponse
+    {
+        $period = $reports->period($request);
+        $summary = $reports->summary($request, $period, 'export');
+        abort_if($summary['data'] === [], 403);
+        ServiceAudit::write('export_requested', 'report', 0, null, ['from' => $period['from'], 'to' => $period['to']]);
+
+        return $this->reportCsv($summary['data'], $period, 'servicehub-report.csv');
+    }
+
+    public function reportDetailExport(Request $request, string $module, ServiceReports $reports): StreamedResponse
+    {
+        ServiceCatalog::activity($module);
+        abort_unless($request->user()->can($module.'.export'), 403);
+        $period = $reports->period($request);
+        ServiceAudit::write('export_requested', 'report', 0, null, ['module' => $module, 'from' => $period['from'], 'to' => $period['to']]);
+
+        return $this->reportCsv([$module => $reports->module($module, $period)], $period, $module.'-report.csv');
+    }
+
+    private function reportCsv(array $data, array $period, string $filename): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($data, $period) {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+            fputcsv($handle, ['ช่วงเริ่ม', 'ช่วงสิ้นสุด', 'หมวดงาน', 'จำนวนรายการ', 'จำนวนช่วงเปรียบเทียบ', 'การเปลี่ยนแปลง (%)', 'ตัวชี้วัด', 'ค่า', 'หน่วย', 'ชนิดค่า', 'วันที่อ้างอิง']);
+            foreach ($data as $module => $item) {
+                foreach ($item['quantities'] ?: ['' => [['total' => '', 'unit' => '', 'kind' => 'sum']]] as $field => $values) {
+                    foreach ($values as $value) {
+                        fputcsv($handle, array_map(static function ($cell) {
+                            $text = (string) ($cell ?? '');
+
+                            return preg_match('/^[\s\x00-\x1F]*[=+\-@]/u', $text) ? "'".$text : $text;
+                        }, [
+                            $period['from'], $period['to'], $module, $item['count'], $item['previous_count'],
+                            $item['change_percent'], $field, $value['total'], $value['unit'], $value['kind'], $value['as_of'] ?? '',
+                        ]));
+                    }
+                }
+            }
+            fclose($handle);
+        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     public function audit(Request $request): JsonResponse

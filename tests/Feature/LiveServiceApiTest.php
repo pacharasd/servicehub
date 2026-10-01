@@ -86,6 +86,7 @@ class LiveServiceApiTest extends TestCase
 
     public function test_dashboard_report_csv_and_audit_reflect_database(): void
     {
+        $this->travelTo(now('Asia/Bangkok')->setDate(2026, 9, 29)->setTime(12, 0));
         $user = $this->administrator();
         $this->withSession(['auth_version' => $user->auth_version ?? 0])->actingAs($user, 'web');
         $this->getJson('/api/dashboard')->assertOk()->assertJsonPath('data.total', 0);
