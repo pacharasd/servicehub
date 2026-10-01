@@ -1,6 +1,7 @@
 import './style.css';
 import fallbackLogoUrl from './assets/nonthaburi-logo.png';
 import { groups, modules } from './data.js';
+import { dashboardContent } from './dashboard.js';
 
 const logoUrl = window.serviceHubUrls?.logo || fallbackLogoUrl;
 
@@ -82,7 +83,11 @@ const references = Object.fromEntries(Object.keys(referenceKinds).map(key => [ke
 let records = [];
 let zones = references['cleaning-zones'];
 let wasteTypes = references['waste-types'];
-let overview = { total: 0, today: 0, groups: {}, recent: [] };
+let overview = null;
+let overviewLoading = false;
+let overviewError = '';
+let overviewRequest = 0;
+let liveDataLoaded = false;
 let reportData = {};
 let auditRows = [];
 let auditMeta = { current_page: 1, last_page: 1 };
@@ -141,18 +146,39 @@ async function allPages(url) {
 async function refreshLiveData() {
   loadError = '';
   try {
-    const [masters, activities, dashboardData] = await Promise.all([
+    const [masters, activities] = await Promise.all([
       Promise.all(Object.keys(referenceKinds).map(async type => [type, can(`${type}.view`) ? await allPages(apiReference(type)) : []])),
       Promise.all(modules.map(async module => can(`${module.id}.view`) ? await allPages(apiActivity(module.id)) : [])),
-      apiRequest(window.serviceHubUrls.apiDashboard),
     ]);
     for (const [type, rows] of masters) references[type] = rows;
     zones = references['cleaning-zones'];
     wasteTypes = references['waste-types'];
     records = activities.flat();
-    overview = dashboardData.data;
+    liveDataLoaded = true;
     render();
   } catch (error) { loadError = error.message || 'ไม่สามารถโหลดข้อมูลจากฐานข้อมูลได้'; render(); }
+}
+
+async function loadDashboard() {
+  const requestId = ++overviewRequest;
+  const { parts, params } = route();
+  if (parts[0] !== 'dashboard' && parts.length) return;
+  overviewLoading = true;
+  overviewError = '';
+  render();
+  try {
+    const query = new URLSearchParams();
+    if (params.has('from')) query.set('from', params.get('from'));
+    if (params.has('to')) query.set('to', params.get('to'));
+    const result = await apiRequest(window.serviceHubUrls.apiDashboard + (query.size ? `?${query}` : ''));
+    if (requestId !== overviewRequest) return;
+    overview = result.data;
+  } catch (error) {
+    if (requestId !== overviewRequest) return;
+    overviewError = error.message || 'ไม่สามารถโหลดภาพรวมได้';
+  } finally {
+    if (requestId === overviewRequest) { overviewLoading = false; render(); }
+  }
 }
 
 function zoneUsage(name) { return records.filter(r => r.module === 'road-washings' && r.cleaning_zone === name).length; }
@@ -226,7 +252,7 @@ function sidebarNavItem(item, currentModule) {
 function sidebar(currentModule, dashboard) {
   return `<div id="mobile-backdrop" class="${mobileOpen ? 'fixed inset-0 z-40 bg-slate-950/35 lg:hidden' : 'hidden'}" data-action="close-menu"></div>
     <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 flex w-[266px] max-w-[calc(100vw-24px)] flex-col border-r border-line bg-white transition-transform duration-200 lg:translate-x-0 lg:visible lg:pointer-events-auto ${mobileOpen ? 'translate-x-0 visible pointer-events-auto' : '-translate-x-full invisible pointer-events-none'}" ${mobileOpen ? 'aria-hidden="false"' : 'aria-hidden="true"'}>
-      <div class="flex h-[84px] items-center gap-3 border-b border-line px-5 sm:px-6">
+      <div class="flex h-[72px] items-center gap-3 border-b border-line px-5 sm:px-6">
         <img src="${logoUrl}" alt="ตราเทศบาลนครนนทบุรี" class="h-12 w-12 shrink-0 object-contain drop-shadow-sm">
         <div><div class="text-[18px] font-bold tracking-tight text-ink">ServiceHub</div><div class="text-[11px] font-medium tracking-wide text-muted">ระบบข้อมูลส่วนบริการ</div></div>
         <button type="button" class="ml-auto rounded-lg p-2 text-muted lg:hidden" data-action="close-menu" aria-label="ปิดเมนู">${icon('close', 20)}</button>
@@ -322,20 +348,7 @@ const primaryButton = (label, href, iconName = 'plus') => `<a href="${href}" cla
 const outlinedButton = (label, href, iconName = 'arrow') => `<a href="${href}" class="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-[#afcfc0] hover:bg-[#f8fbf8]">${esc(label)}${icon(iconName, 17)}</a>`;
 
 function dashboard() {
-  const total = overview.total;
-  const todayCount = overview.today;
-  const countGroups = groups.map((group) => ({ ...group, count: records.filter((record) => moduleById(record.module)?.group === group.id).length }));
-  const max = Math.max(...countGroups.map((group) => group.count), 1);
-  const recent = overview.recent.map(item => records.find(r => r.module === item.module && String(r.id) === String(item.id)) || item).slice(0, 5);
-  return shell(`${pageHeading('ภาพรวมระบบ', 'แดชบอร์ดส่วนบริการ', 'ติดตามงานบริการทุกกลุ่มจากฐานข้อมูลจริง')}
-    <section aria-label="สรุปข้อมูล" class="dashboard-summary mb-6 sm:mb-7 grid min-w-0 grid-cols-1 gap-3.5 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <div class="dashboard-card panel-shadow rounded-2xl border border-line bg-white p-4 sm:p-6"><div class="flex items-center justify-between"><div class="flex h-11 w-11 items-center justify-center rounded-xl bg-[#e6f4ee] text-primary">${icon('grid', 21)}</div><span class="rounded-full bg-[#eef7f2] px-2.5 py-1 text-[11px] font-bold text-primary">ทั้งหมด</span></div><div class="mt-5 sm:mt-7 text-[28px] sm:text-[32px] font-bold leading-none text-ink">${number(total)} <span class="text-sm font-medium text-muted">รายการ</span></div><p class="mt-2 text-xs font-medium text-muted">รายการบริการทั้งหมด</p></div>
-      ${[{ title: 'บันทึกวันนี้', value: todayCount, unit: 'รายการ', iconName: 'calendar', color: 'text-[#3485a5]', bg: 'bg-[#e7f3f8]' }, { title: 'กลุ่มงานบริการ', value: groups.length, unit: 'กลุ่มงาน', iconName: 'sparkles', color: 'text-[#bb7934]', bg: 'bg-[#fff3e5]' }, { title: 'หมวดข้อมูล', value: modules.length, unit: 'หมวด', iconName: 'chart', color: 'text-[#7767b4]', bg: 'bg-[#f1eefb]' }].map((card) => `<div class="dashboard-card panel-shadow rounded-2xl border border-line bg-white p-4 sm:p-6"><div class="flex items-center justify-between"><div class="flex h-11 w-11 items-center justify-center rounded-xl ${card.bg} ${card.color}">${icon(card.iconName, 21)}</div><span class="text-xs font-medium text-[#9aac9f]">ข้อมูลจริง</span></div><div class="mt-5 sm:mt-7 text-[28px] sm:text-[32px] font-bold leading-none text-ink">${number(card.value)} <span class="text-sm font-medium text-muted">${card.unit}</span></div><p class="mt-2 text-xs font-medium text-muted">${card.title}</p></div>`).join('')}
-    </section>
-    <div class="dashboard-panels mb-6 sm:mb-7 grid min-w-0 grid-cols-1 gap-5 sm:gap-6 xl:grid-cols-[minmax(0,1.36fr)_minmax(0,1fr)]"><section aria-labelledby="group-chart-title" class="panel-shadow rounded-2xl border border-line bg-white p-4 sm:p-6"><div class="mb-5 sm:mb-6 flex flex-wrap items-start justify-between gap-2"><div class="min-w-0"><h2 id="group-chart-title" class="text-base font-bold">ปริมาณรายการตามกลุ่มงาน</h2><p class="mt-1 text-xs text-muted">จำนวนรายการในแต่ละกลุ่มงาน</p></div><span class="rounded-full bg-[#f2f7f4] px-2.5 py-1 text-[11px] font-bold text-primary">${number(total)} รายการ</span></div><div class="space-y-4 sm:space-y-5">${countGroups.map((group) => `<div><div class="mb-1.5 sm:mb-2 flex items-center justify-between gap-3 text-xs sm:text-sm"><span class="font-semibold text-[#415650]">${esc(group.short)}</span><span class="font-bold text-ink">${number(group.count)}</span></div><div class="h-2.5 rounded-full bg-[#eef3ef]"><div class="h-2.5 rounded-full ${group.tone === 'mint' ? 'bg-[#38aa82]' : group.tone === 'sky' ? 'bg-[#6daec6]' : group.tone === 'amber' ? 'bg-[#e6b36b]' : 'bg-[#a499cf]'}" style="width:${Math.round(group.count / max * 100)}%"></div></div></div>`).join('')}</div></section>
-      <section aria-labelledby="quick-title" class="panel-shadow rounded-2xl border border-line bg-white p-4 sm:p-6"><div class="mb-4 sm:mb-5"><h2 id="quick-title" class="text-base font-bold">เข้าถึงงานอย่างรวดเร็ว</h2><p class="mt-1 text-xs text-muted">เลือกหมวดงานที่ต้องการจัดการ</p></div><div class="grid gap-2.5">${groups.map((group) => { const first = modules.find((module) => module.group === group.id); return `<a href="${moduleHref(first.id)}" class="group flex items-center gap-3 rounded-xl border border-[#edf1ed] px-3.5 py-3 transition hover:border-[#c8e4d6] hover:bg-[#f8fcf9]"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${group.tone === 'mint' ? 'bg-[#e9f6ef] text-[#229368]' : group.tone === 'sky' ? 'bg-[#eaf4f8] text-[#4c97ae]' : group.tone === 'amber' ? 'bg-[#fcf3e8] text-[#c08740]' : 'bg-[#f2eff9] text-[#8a79b8]'}">${icon(group.icon, 19)}</span><span class="min-w-0 flex-1 break-words text-sm font-semibold leading-5 text-ink">${esc(group.short)}</span>${icon('arrow', 17, 'text-[#9caea3] transition group-hover:translate-x-1 group-hover:text-primary')}</a>`; }).join('')}</div></section></div>
-    <div class="dashboard-panels grid min-w-0 grid-cols-1 gap-5 sm:gap-6 xl:grid-cols-[minmax(0,1.36fr)_minmax(0,1fr)]"><section aria-labelledby="recent-title" class="panel-shadow overflow-hidden rounded-2xl border border-line bg-white"><div class="flex items-center justify-between border-b border-line px-4 py-4 sm:px-6 sm:py-5"><div><h2 id="recent-title" class="text-base font-bold">รายการล่าสุด</h2><p class="mt-1 text-xs text-muted">ข้อมูลจริงที่บันทึกล่าสุด</p></div></div><div class="divide-y divide-[#eef2ee]">${recent.map((record) => { const module = moduleById(record.module); return `<a href="${moduleHref(module.id)}/${encodeURIComponent(record.id)}" class="flex items-center gap-3 px-4 py-3.5 transition hover:bg-[#f9fbf9] sm:px-6 sm:py-4"><div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eef7f0] text-primary">${icon(module.icon, 18)}</div><div class="min-w-0 flex-1"><p class="break-words text-sm font-semibold sm:truncate">${esc(record[module.titleField] || module.short)}</p><p class="mt-0.5 break-words text-xs text-muted sm:truncate">${esc(module.short)}</p></div><span class="hidden text-xs text-muted sm:block">${thaiDate(record.service_date)}</span>${icon('chevron', 16, 'text-[#a6b7ac]')}</a>`; }).join('')}</div></section>
-      <section aria-labelledby="module-title" class="panel-shadow rounded-2xl border border-line bg-white p-4 sm:p-6"><div class="mb-4 sm:mb-5"><h2 id="module-title" class="text-base font-bold">หมวดข้อมูลทั้งหมด</h2><p class="mt-1 text-xs text-muted">ครอบคลุมข้อมูลตามข้อกำหนด AGENT.md</p></div><div class="space-y-1.5">${modules.map((module) => `<a href="${moduleHref(module.id)}" class="flex items-center justify-between gap-3 rounded-lg px-2.5 py-2 text-[13px] text-[#51665b] transition hover:bg-[#f4f9f5] hover:text-primary"><span class="min-w-0 break-words">${esc(module.short)}</span><span class="shrink-0 rounded-full bg-[#f2f6f2] px-2 py-0.5 text-[11px] font-bold text-[#779081]">${records.filter((record) => record.module === module.id).length}</span></a>`).join('')}</div></section></div>`, null, [{ label: 'แดชบอร์ดส่วนบริการ', current: true }], true);
+  return shell(dashboardContent({ data: overview, loading: overviewLoading, error: overviewError, params: route().params, groups, modules, icon, esc, number, moduleHref }), null, [{ label: 'แดชบอร์ดส่วนบริการ', current: true }], true);
 }
 
 function listPage(module, params) {
@@ -1352,6 +1365,9 @@ function render() {
   } else if (parts[0] === 'dashboard' || !parts.length) markup = dashboard();
   else if (parts[0] === 'reports') markup = reportsPage(params);
   else if (parts[0] === 'audit-logs') markup = auditPage(params);
+  else if (!liveDataLoaded && ((module && can(`${module.id}.view`)) || (parts[0] in referenceKinds && can(`${parts[0]}.view`)))) {
+    markup = shell(`<div class="panel-shadow rounded-2xl border border-line bg-white p-6 text-sm text-muted" ${loadError ? 'role="alert"' : 'role="status"'}>${loadError ? 'ไม่สามารถโหลดรายการงานบริการได้' : 'กำลังโหลดรายการงานบริการ…'}${loadError ? '<button type="button" data-action="retry-live-data" class="ml-3 min-h-11 rounded-xl border border-line px-3 font-semibold text-primary">ลองอีกครั้ง</button>' : ''}</div>`, module?.id || parts[0]);
+  }
   else if (parts[0] === 'waste-types') {
     if (!can('waste-types.view')) markup = notFound();
     else
@@ -1483,6 +1499,24 @@ document.addEventListener('input', (event) => {
 });
 
 document.addEventListener('submit', (event) => {
+  if (event.target.id === 'dashboard-filter') {
+    event.preventDefault();
+    const form = event.target;
+    const from = form.elements.from.value;
+    const to = form.elements.to.value;
+    const error = form.parentElement.querySelector('#dashboard-filter-error');
+    if (!from || !to || from > to) {
+      error.textContent = !from || !to ? 'กรุณาระบุวันที่เริ่มต้นและสิ้นสุด' : 'วันสิ้นสุดต้องไม่ก่อนวันเริ่มต้น';
+      error.classList.remove('hidden');
+      return;
+    }
+    error.textContent = '';
+    error.classList.add('hidden');
+    const next = `#/dashboard?${new URLSearchParams({ from, to })}`;
+    if (location.hash === next) loadDashboard();
+    else location.hash = next;
+    return;
+  }
   if (event.target.id === 'report-filter' || event.target.id === 'audit-filter') {
     event.preventDefault();
     const params = new URLSearchParams(new FormData(event.target));
@@ -1547,6 +1581,8 @@ document.addEventListener('click', (event) => {
   const trigger = event.target.closest('[data-action]');
   if (!trigger) return;
   const action = trigger.dataset.action;
+  if (action === 'retry-dashboard') { loadDashboard(); return; }
+  if (action === 'retry-live-data') { refreshLiveData(); return; }
   if (action === 'toggle-user-menu') {
     userMenuOpen = !userMenuOpen;
     render();
@@ -1650,7 +1686,17 @@ document.addEventListener('keydown', (event) => {
 });
 
 window.addEventListener('resize', syncMobileNavigation);
-window.addEventListener('hashchange', () => { formPage.draft = null; mobileOpen = false; userMenuOpen = false; expandActiveSidebarGroup(); render(); loadReportAndAudit(); });
+window.addEventListener('hashchange', () => {
+  formPage.draft = null;
+  mobileOpen = false;
+  userMenuOpen = false;
+  expandActiveSidebarGroup();
+  render();
+  const { parts } = route();
+  if (parts[0] === 'dashboard' || !parts.length) loadDashboard();
+  else if (!liveDataLoaded) refreshLiveData();
+  loadReportAndAudit();
+});
 document.addEventListener('click', (e) => {
   if (userMenuOpen && !e.target.closest('#user-menu-container')) {
     userMenuOpen = false;
@@ -1662,6 +1708,7 @@ document.addEventListener('click', (e) => {
 });
 expandActiveSidebarGroup();
 render();
-refreshLiveData();
+if (route().parts[0] === 'dashboard' || !route().parts.length) loadDashboard();
+else refreshLiveData();
 loadReportAndAudit();
 
