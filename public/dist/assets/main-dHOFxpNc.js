@@ -24,7 +24,6 @@ const vt=""+new URL("nonthaburi-logo-BxI5auOM.png",import.meta.url).href,Ge=[{id
           </a>
         </div>
       </nav>
-      <div class="border-t border-line p-4"><div class="rounded-2xl bg-[#f3f8f5] p-3.5"><div class="flex items-center gap-2 text-xs font-bold text-primary-dark">${p("info",16)} ระบบข้อมูลจริง</div><p class="mt-1.5 text-[11px] leading-relaxed text-muted">ข้อมูลที่บันทึกจะอยู่ในฐานข้อมูลเทศบาลนครนนทบุรี</p></div></div>
     </aside>`}function Lt(e){const t=window.serviceHubUser||{},s=(t.name||t.username||"U").slice(0,1).toUpperCase(),a=(t.name||t.username||"U").slice(0,2).toUpperCase(),r=(t.roles||[])[0]||"staff";return`<header class="app-header sticky top-0 z-30 flex h-[72px] w-full max-w-full min-w-0 items-center justify-between border-b border-line bg-white/95 px-3.5 backdrop-blur-sm sm:px-7 lg:px-9">
     <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
       <button type="button" class="shrink-0 rounded-xl p-2 text-ink hover:bg-canvas lg:hidden" data-action="open-menu" aria-label="เปิดเมนู" aria-expanded="${j}" aria-controls="sidebar">${p("menu",22)}</button>

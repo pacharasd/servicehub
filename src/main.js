@@ -275,7 +275,6 @@ function sidebar(currentModule, dashboard) {
           </a>
         </div>
       </nav>
-      <div class="border-t border-line p-4"><div class="rounded-2xl bg-[#f3f8f5] p-3.5"><div class="flex items-center gap-2 text-xs font-bold text-primary-dark">${icon('info', 16)} ระบบข้อมูลจริง</div><p class="mt-1.5 text-[11px] leading-relaxed text-muted">ข้อมูลที่บันทึกจะอยู่ในฐานข้อมูลเทศบาลนครนนทบุรี</p></div></div>
     </aside>`;
 }
 function topbar(breadcrumbs) {
