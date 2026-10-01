@@ -260,7 +260,7 @@ function sidebar(currentModule, dashboard) {
     <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 flex w-[266px] max-w-[calc(100vw-24px)] flex-col border-r border-line bg-white transition-transform duration-200 lg:translate-x-0 lg:visible lg:pointer-events-auto ${mobileOpen ? 'translate-x-0 visible pointer-events-auto' : '-translate-x-full invisible pointer-events-none'}" ${mobileOpen ? 'aria-hidden="false"' : 'aria-hidden="true"'}>
       <div class="flex h-[72px] items-center gap-3 border-b border-line px-5 sm:px-6">
         <img src="${logoUrl}" alt="ตราเทศบาลนครนนทบุรี" class="h-12 w-12 shrink-0 object-contain drop-shadow-sm">
-        <div><div class="text-[18px] font-bold tracking-tight text-ink">ServiceHub</div><div class="text-[11px] font-medium tracking-wide text-muted">ฐานข้อมูลฝ่ายบริการ</div></div>
+        <div class="min-w-0 flex-1"><div class="text-[15px] font-bold tracking-tight text-ink leading-snug">เทศบาลนครนนทบุรี</div><div class="text-[11px] font-medium tracking-wide text-muted">ฐานข้อมูลฝ่ายบริการ</div></div>
         <button type="button" class="ml-auto rounded-lg p-2 text-muted lg:hidden" data-action="close-menu" aria-label="ปิดเมนู">${icon('close', 20)}</button>
       </div>
       <nav aria-label="เมนูหลัก" class="scrollbar-thin flex-1 overflow-y-auto px-4 pb-6 pt-6">
@@ -275,7 +275,7 @@ function sidebar(currentModule, dashboard) {
           </a>
         </div>
       </nav>
-      <div class="border-t border-line p-4"><div class="rounded-2xl bg-[#f3f8f5] p-3.5"><div class="flex items-center gap-2 text-xs font-bold text-primary-dark">${icon('info', 16)} ระบบข้อมูลจริง</div><p class="mt-1.5 text-[11px] leading-relaxed text-muted">ข้อมูลที่บันทึกจะอยู่ในฐานข้อมูล ServiceHub</p></div></div>
+      <div class="border-t border-line p-4"><div class="rounded-2xl bg-[#f3f8f5] p-3.5"><div class="flex items-center gap-2 text-xs font-bold text-primary-dark">${icon('info', 16)} ระบบข้อมูลจริง</div><p class="mt-1.5 text-[11px] leading-relaxed text-muted">ข้อมูลที่บันทึกจะอยู่ในฐานข้อมูลเทศบาลนครนนทบุรี</p></div></div>
     </aside>`;
 }
 function topbar(breadcrumbs) {
@@ -1432,7 +1432,7 @@ function render() {
     if (!can(`${resource}.delete`)) app.querySelectorAll('[data-action="delete"], [data-action="delete-zone"], [data-action="delete-waste-type"], [data-action="delete-reference"]').forEach(button => button.remove());
   }
   syncMobileNavigation();
-  document.title = `${parts[0] === 'reports' ? (moduleById(parts[1])?.short || 'รายงาน') : parts[0] === 'login' ? 'เข้าสู่ระบบ' : parts[0] === 'profile' ? 'โปรไฟล์ส่วนบุคคล' : parts[0] === 'cleaning-zones' ? 'เขตรักษาความสะอาด' : parts[0] === 'waste-types' ? 'ประเภทขยะมูลฝอย' : module?.short || 'แดชบอร์ดฝ่ายบริการ'} — ServiceHub`;
+  document.title = `${parts[0] === 'reports' ? (moduleById(parts[1])?.short || 'รายงาน') : parts[0] === 'login' ? 'เข้าสู่ระบบ' : parts[0] === 'profile' ? 'โปรไฟล์ส่วนบุคคล' : parts[0] === 'cleaning-zones' ? 'เขตรักษาความสะอาด' : parts[0] === 'waste-types' ? 'ประเภทขยะมูลฝอย' : module?.short || 'แดชบอร์ดฝ่ายบริการ'} — เทศบาลนครนนทบุรี`;
   if (pendingDelete) document.querySelector('[data-dialog] button[data-action="cancel-delete"]')?.focus();
   initCustomSelects();
 }
