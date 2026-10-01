@@ -316,7 +316,7 @@ class SampleDataSeeder extends Seeder
             ['action' => 'reference.updated', 'subject_type' => 'App\\Models\\CleaningZone', 'details' => 'ปรับปรุงข้อมูลเขตรักษาความสะอาด'],
             ['action' => 'activity.created', 'subject_type' => 'App\\Models\\DrainCleaning', 'details' => 'บันทึกงานลอกท่อระบายน้ำซอยเรวดี'],
             ['action' => 'activity.created', 'subject_type' => 'App\\Models\\SepticPumping', 'details' => 'บันทึกงานสูบสิ่งปฏิกูลตลาดสดศรีพรสวรรค์'],
-            ['action' => 'report.exported', 'subject_type' => null, 'details' => 'ส่งออกรายงานภาพรวมส่วนบริการ'],
+            ['action' => 'report.exported', 'subject_type' => null, 'details' => 'ส่งออกรายงานภาพรวมฝ่ายบริการ'],
         ];
         foreach ($actions as $i => $act) {
             $date = $dates[$i % count($dates)];

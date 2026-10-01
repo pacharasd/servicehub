@@ -86,7 +86,7 @@
   ```javascript
   {
     id: 1,
-    name: "ผู้ดูแลระบบส่วนบริการ",
+    name: "ผู้ดูแลระบบฝ่ายบริการ",
     username: "admin",
     roles: ["super-admin"],
     permissions: ["users.view", "users.create", "users.update", "users.disable", "roles.view"]

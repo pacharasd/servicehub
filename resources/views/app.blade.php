@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#f7f8f5">
-    <meta name="description" content="ระบบข้อมูลส่วนบริการ">
-    <title>ServiceHub — ระบบข้อมูลส่วนบริการ</title>
+    <meta name="description" content="ฐานข้อมูลฝ่ายบริการ">
+    <title>ServiceHub — ฐานข้อมูลฝ่ายบริการ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">

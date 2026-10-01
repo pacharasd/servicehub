@@ -260,11 +260,11 @@ function sidebar(currentModule, dashboard) {
     <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 flex w-[266px] max-w-[calc(100vw-24px)] flex-col border-r border-line bg-white transition-transform duration-200 lg:translate-x-0 lg:visible lg:pointer-events-auto ${mobileOpen ? 'translate-x-0 visible pointer-events-auto' : '-translate-x-full invisible pointer-events-none'}" ${mobileOpen ? 'aria-hidden="false"' : 'aria-hidden="true"'}>
       <div class="flex h-[72px] items-center gap-3 border-b border-line px-5 sm:px-6">
         <img src="${logoUrl}" alt="ตราเทศบาลนครนนทบุรี" class="h-12 w-12 shrink-0 object-contain drop-shadow-sm">
-        <div><div class="text-[18px] font-bold tracking-tight text-ink">ServiceHub</div><div class="text-[11px] font-medium tracking-wide text-muted">ระบบข้อมูลส่วนบริการ</div></div>
+        <div><div class="text-[18px] font-bold tracking-tight text-ink">ServiceHub</div><div class="text-[11px] font-medium tracking-wide text-muted">ฐานข้อมูลฝ่ายบริการ</div></div>
         <button type="button" class="ml-auto rounded-lg p-2 text-muted lg:hidden" data-action="close-menu" aria-label="ปิดเมนู">${icon('close', 20)}</button>
       </div>
       <nav aria-label="เมนูหลัก" class="scrollbar-thin flex-1 overflow-y-auto px-4 pb-6 pt-6">
-        <a href="#/dashboard" class="mb-2 flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold ${dashboard ? 'nav-active' : 'text-[#657772] hover:bg-[#f4f7f4] hover:text-ink'}" ${dashboard ? 'aria-current="page"' : ''}>${icon('grid', 19)}<span>แดชบอร์ดส่วนบริการ</span></a>
+        <a href="#/dashboard" class="mb-2 flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold ${dashboard ? 'nav-active' : 'text-[#657772] hover:bg-[#f4f7f4] hover:text-ink'}" ${dashboard ? 'aria-current="page"' : ''}>${icon('grid', 19)}<span>แดชบอร์ดฝ่ายบริการ</span></a>
         ${sidebarItems.map((item) => sidebarNavItem(item, currentModule)).join('')}
         <a href="#/reports" class="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold ${currentModule === 'reports' ? 'nav-active' : 'text-[#657772] hover:bg-[#f4f7f4] hover:text-ink'}">${icon('chart', 18)}รายงาน</a>
         ${can('audit-logs.view') ? `<a href="#/audit-logs" class="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold ${currentModule === 'audit-logs' ? 'nav-active' : 'text-[#657772] hover:bg-[#f4f7f4] hover:text-ink'}">${icon('info', 18)}ประวัติการแก้ไข</a>` : ''}
@@ -354,7 +354,7 @@ const primaryButton = (label, href, iconName = 'plus') => `<a href="${href}" cla
 const outlinedButton = (label, href, iconName = 'arrow') => `<a href="${href}" class="inline-flex min-h-11 w-full sm:w-auto items-center justify-center gap-2 rounded-xl border border-line bg-white px-4 py-2.5 text-sm font-semibold text-ink transition hover:border-[#afcfc0] hover:bg-[#f8fbf8]">${esc(label)}${icon(iconName, 17)}</a>`;
 
 function dashboard() {
-  return shell(dashboardContent({ data: overview, loading: overviewLoading, error: overviewError, params: route().params, groups, modules, icon, esc, number, moduleHref }), null, [{ label: 'แดชบอร์ดส่วนบริการ', current: true }], true);
+  return shell(dashboardContent({ data: overview, loading: overviewLoading, error: overviewError, params: route().params, groups, modules, icon, esc, number, moduleHref }), null, [{ label: 'แดชบอร์ดฝ่ายบริการ', current: true }], true);
 }
 
 function listPage(module, params) {
@@ -520,7 +520,7 @@ function wasteTypeDetailPage(wasteType) {
 }
 
 function notFound() {
-  return shell(`<div class="panel-shadow mx-auto mt-10 max-w-lg rounded-2xl border border-line bg-white p-10 text-center"><div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f2f7f3] text-primary">${icon('empty', 27)}</div><h1 class="text-xl font-bold">ไม่พบหน้าที่ต้องการ</h1><p class="mt-2 text-sm text-muted">รายการนี้อาจถูกลบหรือไม่มีอยู่ในข้อมูลจริง</p><div class="mt-6">${primaryButton('กลับแดชบอร์ดส่วนบริการ', '#/dashboard', 'arrow')}</div></div>`, null, [{ label: 'ไม่พบหน้า', current: true }]);
+  return shell(`<div class="panel-shadow mx-auto mt-10 max-w-lg rounded-2xl border border-line bg-white p-10 text-center"><div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f2f7f3] text-primary">${icon('empty', 27)}</div><h1 class="text-xl font-bold">ไม่พบหน้าที่ต้องการ</h1><p class="mt-2 text-sm text-muted">รายการนี้อาจถูกลบหรือไม่มีอยู่ในข้อมูลจริง</p><div class="mt-6">${primaryButton('กลับแดชบอร์ดฝ่ายบริการ', '#/dashboard', 'arrow')}</div></div>`, null, [{ label: 'ไม่พบหน้า', current: true }]);
 }
 
 
@@ -1432,7 +1432,7 @@ function render() {
     if (!can(`${resource}.delete`)) app.querySelectorAll('[data-action="delete"], [data-action="delete-zone"], [data-action="delete-waste-type"], [data-action="delete-reference"]').forEach(button => button.remove());
   }
   syncMobileNavigation();
-  document.title = `${parts[0] === 'reports' ? (moduleById(parts[1])?.short || 'รายงาน') : parts[0] === 'login' ? 'เข้าสู่ระบบ' : parts[0] === 'profile' ? 'โปรไฟล์ส่วนบุคคล' : parts[0] === 'cleaning-zones' ? 'เขตรักษาความสะอาด' : parts[0] === 'waste-types' ? 'ประเภทขยะมูลฝอย' : module?.short || 'แดชบอร์ดส่วนบริการ'} — ServiceHub`;
+  document.title = `${parts[0] === 'reports' ? (moduleById(parts[1])?.short || 'รายงาน') : parts[0] === 'login' ? 'เข้าสู่ระบบ' : parts[0] === 'profile' ? 'โปรไฟล์ส่วนบุคคล' : parts[0] === 'cleaning-zones' ? 'เขตรักษาความสะอาด' : parts[0] === 'waste-types' ? 'ประเภทขยะมูลฝอย' : module?.short || 'แดชบอร์ดฝ่ายบริการ'} — ServiceHub`;
   if (pendingDelete) document.querySelector('[data-dialog] button[data-action="cancel-delete"]')?.focus();
   initCustomSelects();
 }

@@ -17,7 +17,7 @@
         <section class="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-[#0e6253] via-[#177a67] to-[#2f9779] p-12 text-white lg:flex" aria-label="เกี่ยวกับ ServiceHub">
             <div class="absolute -right-24 -top-24 h-80 w-80 rounded-full border-[48px] border-white/10" aria-hidden="true"></div>
             <div class="relative flex items-center gap-3"><img src="{{ asset('images/nonthaburi-logo.png') }}" alt="ตราเทศบาลนครนนทบุรี" class="h-12 w-12 rounded-full bg-white p-0.5"><span class="text-xl font-bold">ServiceHub</span></div>
-            <div class="relative max-w-md"><p class="mb-5 inline-flex rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-bold">ระบบข้อมูลส่วนบริการ</p><h2 class="text-[42px] font-bold leading-tight">จัดการข้อมูลบริการ<br>ในที่เดียว</h2><p class="mt-6 text-sm leading-7 text-white/80">ติดตามงานรักษาความสะอาด การจัดการมูลฝอย สิ่งปฏิกูล และโครงการของส่วนบริการ</p></div>
+            <div class="relative max-w-md"><p class="mb-5 inline-flex rounded-full border border-white/30 bg-white/10 px-4 py-2 text-xs font-bold">ฐานข้อมูลฝ่ายบริการ</p><h2 class="text-[42px] font-bold leading-tight">จัดการข้อมูลบริการ<br>ในที่เดียว</h2><p class="mt-6 text-sm leading-7 text-white/80">ติดตามงานรักษาความสะอาด การจัดการมูลฝอย สิ่งปฏิกูล และโครงการของฝ่ายบริการ</p></div>
             <p class="relative text-xs text-white/70">เทศบาลนครนนทบุรี</p>
         </section>
         <section class="flex min-w-0 flex-col justify-center px-6 py-9 sm:px-12 lg:px-14">

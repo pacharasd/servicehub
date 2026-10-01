@@ -29,7 +29,7 @@ class UserSeeder extends Seeder
         $admin = User::firstOrCreate(
             ['username' => 'admin'],
             [
-                'name' => 'ผู้ดูแลระบบส่วนบริการ',
+                'name' => 'ผู้ดูแลระบบฝ่ายบริการ',
                 'password' => Hash::make('Admin@ServiceHub2026'),
                 'is_active' => true,
             ]
