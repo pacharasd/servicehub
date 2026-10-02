@@ -397,8 +397,10 @@ export function openUserDrawer({ mode, user = null, trigger = null, toastFn = sh
         <div>
           <label for="um-new-password" class="mb-1.5 block text-sm font-semibold text-ink">รหัสผ่านใหม่ <span class="text-red-500">*</span></label>
           <div class="relative">
-            <input id="um-new-password" name="password" type="password" autocomplete="new-password" class="field pr-20 font-mono" required minlength="15" aria-describedby="um-password-error">
-            <button type="button" data-action="toggle-pwd-visibility" data-target="um-new-password" class="absolute inset-y-1 right-1 rounded-lg px-3 text-xs font-bold text-primary">แสดง</button>
+            <input id="um-new-password" name="password" type="password" autocomplete="new-password" class="field pr-12 font-mono" required minlength="15" aria-describedby="um-password-error">
+            <button type="button" data-action="toggle-pwd-visibility" data-target="um-new-password" class="absolute inset-y-0 right-0 flex min-h-11 min-w-11 items-center justify-center rounded-r-xl text-muted transition hover:text-ink focus:outline-none focus:ring-2 focus:ring-primary/20" aria-label="แสดงรหัสผ่าน" aria-pressed="false" aria-controls="um-new-password">
+              ${icon('eye', 18)}
+            </button>
           </div>
           <p id="um-password-error" class="mt-1 text-xs text-muted" role="alert">ความยาวอย่างน้อย 15 ตัวอักษร</p>
           <button type="button" id="um-gen-pw-btn" class="mt-2 text-xs font-semibold text-primary hover:underline">สุ่มรหัสผ่านปลอดภัย</button>
@@ -429,8 +431,10 @@ export function openUserDrawer({ mode, user = null, trigger = null, toastFn = sh
         <div>
           <label for="um-password" class="mb-1.5 block text-sm font-semibold text-ink">รหัสผ่านเริ่มต้น <span class="text-red-500">*</span></label>
           <div class="relative">
-            <input id="um-password" name="password" type="password" autocomplete="new-password" class="field pr-20 font-mono" required minlength="15" aria-describedby="um-password-error">
-            <button type="button" data-action="toggle-pwd-visibility" data-target="um-password" class="absolute inset-y-1 right-1 rounded-lg px-3 text-xs font-bold text-primary">แสดง</button>
+            <input id="um-password" name="password" type="password" autocomplete="new-password" class="field pr-12 font-mono" required minlength="15" aria-describedby="um-password-error">
+            <button type="button" data-action="toggle-pwd-visibility" data-target="um-password" class="absolute inset-y-0 right-0 flex min-h-11 min-w-11 items-center justify-center rounded-r-xl text-muted transition hover:text-ink focus:outline-none focus:ring-2 focus:ring-primary/20" aria-label="แสดงรหัสผ่าน" aria-pressed="false" aria-controls="um-password">
+              ${icon('eye', 18)}
+            </button>
           </div>
           <p id="um-password-error" class="mt-1 text-xs text-muted" role="alert">ความยาวอย่างน้อย 15 ตัวอักษร</p>
           <button type="button" id="um-gen-init-pw-btn" class="mt-2 text-xs font-semibold text-primary hover:underline">สุ่มรหัสผ่านปลอดภัย</button>
@@ -453,7 +457,9 @@ export function openUserDrawer({ mode, user = null, trigger = null, toastFn = sh
       if (!input) return;
       const isPwd = input.type === 'password';
       input.type = isPwd ? 'text' : 'password';
-      btn.textContent = isPwd ? 'ซ่อน' : 'แสดง';
+      btn.innerHTML = icon(isPwd ? 'eyeOff' : 'eye', 18);
+      btn.setAttribute('aria-label', isPwd ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน');
+      btn.setAttribute('aria-pressed', String(isPwd));
     });
   });
 
@@ -464,7 +470,11 @@ export function openUserDrawer({ mode, user = null, trigger = null, toastFn = sh
       field.value = pw;
       field.type = 'text';
       const toggle = content.querySelector(`[data-target="${field.id}"]`);
-      if (toggle) toggle.textContent = 'ซ่อน';
+      if (toggle) {
+        toggle.innerHTML = icon('eyeOff', 18);
+        toggle.setAttribute('aria-label', 'ซ่อนรหัสผ่าน');
+        toggle.setAttribute('aria-pressed', 'true');
+      }
     }
   };
   content.querySelector('#um-gen-pw-btn')?.addEventListener('click', pwGen);

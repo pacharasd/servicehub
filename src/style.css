@@ -54,6 +54,12 @@ table, th, td {
 }
 select option { background-color: #ffffff; color: var(--color-ink); font-weight: normal; }
 
+/* Suppress native browser password reveal/clear buttons (Edge/Chromium) to prevent overlapping custom toggle */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none !important;
+}
+
 html, body, #app {
   width: 100% !important;
   max-width: 100% !important;

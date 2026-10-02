@@ -90,8 +90,10 @@ export function profilePage() {
           <div>
             <label for="profile-current-pwd" class="mb-1 block text-sm font-semibold text-ink">รหัสผ่านปัจจุบัน <span class="text-red-500">*</span></label>
             <div class="relative">
-              <input id="profile-current-pwd" name="current_password" type="password" required autocomplete="current-password" class="field w-full pr-16" placeholder="กรอกรหัสผ่านปัจจุบัน">
-              <button type="button" data-action="toggle-pwd" data-target="profile-current-pwd" class="absolute inset-y-1 right-1 flex items-center px-3 text-xs font-semibold text-primary hover:text-primary-dark">แสดง</button>
+              <input id="profile-current-pwd" name="current_password" type="password" required autocomplete="current-password" class="field w-full pr-12" placeholder="กรอกรหัสผ่านปัจจุบัน">
+              <button type="button" data-action="toggle-pwd" data-target="profile-current-pwd" class="absolute inset-y-0 right-0 flex min-h-11 min-w-11 items-center justify-center rounded-r-xl text-muted transition hover:text-ink focus:outline-none focus:ring-2 focus:ring-primary/20" aria-label="แสดงรหัสผ่าน" aria-pressed="false" aria-controls="profile-current-pwd">
+                ${icon('eye', 18)}
+              </button>
             </div>
             <p id="profile-current-pwd-error" class="mt-1 text-xs text-red-600 hidden" role="alert"></p>
           </div>
@@ -104,8 +106,10 @@ export function profilePage() {
               </button>
             </div>
             <div class="relative">
-              <input id="profile-new-pwd" name="password" type="password" required minlength="15" autocomplete="new-password" class="field w-full pr-16" placeholder="รหัสผ่านใหม่ไม่น้อยกว่า 15 ตัวอักษร">
-              <button type="button" data-action="toggle-pwd" data-target="profile-new-pwd" class="absolute inset-y-1 right-1 flex items-center px-3 text-xs font-semibold text-primary hover:text-primary-dark">แสดง</button>
+              <input id="profile-new-pwd" name="password" type="password" required minlength="15" autocomplete="new-password" class="field w-full pr-12" placeholder="รหัสผ่านใหม่ไม่น้อยกว่า 15 ตัวอักษร">
+              <button type="button" data-action="toggle-pwd" data-target="profile-new-pwd" class="absolute inset-y-0 right-0 flex min-h-11 min-w-11 items-center justify-center rounded-r-xl text-muted transition hover:text-ink focus:outline-none focus:ring-2 focus:ring-primary/20" aria-label="แสดงรหัสผ่าน" aria-pressed="false" aria-controls="profile-new-pwd">
+                ${icon('eye', 18)}
+              </button>
             </div>
             <p id="profile-new-pwd-error" class="mt-1 text-xs text-red-600 hidden" role="alert"></p>
           </div>
@@ -113,8 +117,10 @@ export function profilePage() {
           <div>
             <label for="profile-confirm-pwd" class="mb-1 block text-sm font-semibold text-ink">ยืนยันรหัสผ่านใหม่ <span class="text-red-500">*</span></label>
             <div class="relative">
-              <input id="profile-confirm-pwd" name="password_confirmation" type="password" required minlength="15" autocomplete="new-password" class="field w-full pr-16" placeholder="กรอกรหัสผ่านใหม่อีกครั้ง">
-              <button type="button" data-action="toggle-pwd" data-target="profile-confirm-pwd" class="absolute inset-y-1 right-1 flex items-center px-3 text-xs font-semibold text-primary hover:text-primary-dark">แสดง</button>
+              <input id="profile-confirm-pwd" name="password_confirmation" type="password" required minlength="15" autocomplete="new-password" class="field w-full pr-12" placeholder="กรอกรหัสผ่านใหม่อีกครั้ง">
+              <button type="button" data-action="toggle-pwd" data-target="profile-confirm-pwd" class="absolute inset-y-0 right-0 flex min-h-11 min-w-11 items-center justify-center rounded-r-xl text-muted transition hover:text-ink focus:outline-none focus:ring-2 focus:ring-primary/20" aria-label="แสดงรหัสผ่าน" aria-pressed="false" aria-controls="profile-confirm-pwd">
+                ${icon('eye', 18)}
+              </button>
             </div>
             <p id="profile-confirm-pwd-error" class="mt-1 text-xs text-red-600 hidden" role="alert"></p>
           </div>
@@ -147,7 +153,9 @@ export function attachProfileEvents({ toastFn = showToast, onNameUpdated } = {})
       if (!input) return;
       const isPwd = input.type === 'password';
       input.type = isPwd ? 'text' : 'password';
-      btn.textContent = isPwd ? 'ซ่อน' : 'แสดง';
+      btn.innerHTML = icon(isPwd ? 'eyeOff' : 'eye', 18);
+      btn.setAttribute('aria-label', isPwd ? 'ซ่อนรหัสผ่าน' : 'แสดงรหัสผ่าน');
+      btn.setAttribute('aria-pressed', String(isPwd));
     });
   });
 
@@ -164,13 +172,21 @@ export function attachProfileEvents({ toastFn = showToast, onNameUpdated } = {})
       newPwd.value = pw;
       newPwd.type = 'text';
       const btn = document.querySelector('[data-target="profile-new-pwd"]');
-      if (btn) btn.textContent = 'ซ่อน';
+      if (btn) {
+        btn.innerHTML = icon('eyeOff', 18);
+        btn.setAttribute('aria-label', 'ซ่อนรหัสผ่าน');
+        btn.setAttribute('aria-pressed', 'true');
+      }
     }
     if (confirmPwd) {
       confirmPwd.value = pw;
       confirmPwd.type = 'text';
       const btn = document.querySelector('[data-target="profile-confirm-pwd"]');
-      if (btn) btn.textContent = 'ซ่อน';
+      if (btn) {
+        btn.innerHTML = icon('eyeOff', 18);
+        btn.setAttribute('aria-label', 'ซ่อนรหัสผ่าน');
+        btn.setAttribute('aria-pressed', 'true');
+      }
     }
   });
 

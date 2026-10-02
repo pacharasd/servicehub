@@ -1,4 +1,4 @@
-import{a as m,p as g,o as f,d as b}from"./view-users-iAQT2Vs4.js";import{r as v,e as o,t as h}from"./view-analytics-BMG2sQy1.js";let c=[],u={current_page:1,last_page:1};function $({params:e,auditRows:a=c,auditMeta:t=u}){if(!m("audit-logs.view"))return`
+import{a as m,p as g,o as f,d as b}from"./view-users-DB_OcK_G.js";import{r as v,e as o,t as h}from"./view-analytics-BMG2sQy1.js";let c=[],u={current_page:1,last_page:1};function $({params:e,auditRows:a=c,auditMeta:t=u}){if(!m("audit-logs.view"))return`
       <div class="panel-shadow mx-auto mt-10 max-w-lg rounded-2xl border border-line bg-white p-10 text-center">
         <h1 class="text-xl font-bold">ไม่มีสิทธิ์เข้าถึง</h1>
         <p class="mt-2 text-sm text-muted">คุณไม่มีสิทธิ์ในการดูประวัติการแก้ไขข้อมูลของระบบ</p>
