@@ -188,12 +188,15 @@ export async function apiRequest(url, options = {}) {
   if (!response.ok) {
     let errorMsg = payload.message;
 
-    if (response.status === 403) {
+    if (response.status === 429) {
+      const retryAfter = response.headers?.get?.('Retry-After');
+      errorMsg = retryAfter
+        ? `คำขอส่งมาถี่เกินไป กรุณารอ ${retryAfter} วินาทีแล้วลองใหม่อีกครั้ง`
+        : 'คำขอส่งมาถี่เกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง (Too Many Attempts)';
+    } else if (response.status === 403) {
       errorMsg = errorMsg || 'คุณไม่มีสิทธิ์ดำเนินการในส่วนนี้';
     } else if (response.status === 422) {
       errorMsg = errorMsg || 'ข้อมูลที่ส่งไม่ถูกต้อง กรุณาตรวจสอบข้อมูลอีกครั้ง';
-    } else if (response.status === 429) {
-      errorMsg = errorMsg || 'คำขอส่งมาถี่เกินไป กรุณารอสักครู่แล้วลองใหม่ (Too Many Attempts)';
     } else {
       errorMsg = errorMsg || `เกิดข้อผิดพลาด (${response.status})`;
     }

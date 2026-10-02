@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->trustProxies(at: '*');
         $middleware->append(SecurityHeaders::class);
         $middleware->web(append: [EnsureActiveAccount::class]);
         $middleware->redirectGuestsTo(fn (Request $request) => $request->expectsJson() || $request->is('api/*') ? null : route('login'));
@@ -39,6 +40,7 @@ return Application::configure(basePath: dirname(__DIR__))
             ThrottleRequests::class,
             ThrottleRequestsWithRedis::class,
             AuthenticatesRequests::class,
+            \Illuminate\Auth\Middleware\Authenticate::class,
             AuthenticatesSessions::class,
             SubstituteBindings::class,
             Authorize::class,

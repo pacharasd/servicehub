@@ -27,7 +27,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        RateLimiter::for('api', fn (Request $request) => Limit::perMinute(60)->by($request->user()?->id ?: $request->ip()));
+        RateLimiter::for('api', function (Request $request) {
+            $user = $request->user() ?? (auth()->guard('web')->check() ? auth()->guard('web')->user() : null);
+            $key = $user?->id ?: $request->ip();
+            return Limit::perMinute(60)->by($key);
+        });
 
         Event::listen(Login::class, function (Login $event) {
             if (request()->hasSession()) {
