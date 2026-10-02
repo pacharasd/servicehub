@@ -122,7 +122,12 @@ export function syncMobileNavigation() {
   const backdrop = document.getElementById('mobile-backdrop');
 
   if (backdrop) {
-    backdrop.classList.toggle('hidden', !mobileOpen);
+    backdrop.classList.toggle('opacity-100', isMobile && mobileOpen);
+    backdrop.classList.toggle('pointer-events-auto', isMobile && mobileOpen);
+    backdrop.classList.toggle('visible', isMobile && mobileOpen);
+    backdrop.classList.toggle('opacity-0', !isMobile || !mobileOpen);
+    backdrop.classList.toggle('pointer-events-none', !isMobile || !mobileOpen);
+    backdrop.classList.toggle('invisible', !isMobile || !mobileOpen);
   }
 
   if (sidebarElement) {
@@ -186,8 +191,8 @@ function sidebarNavItem(item, currentModule) {
 export function sidebar(currentModule, dashboard) {
   const logoUrl = window.serviceHubUrls?.logo || fallbackLogoUrl;
   return `
-    <div id="mobile-backdrop" class="${mobileOpen ? 'fixed inset-0 z-40 bg-slate-950/35 lg:hidden' : 'hidden'}" data-action="close-menu"></div>
-    <aside id="sidebar" role="complementary" aria-label="แถบเมนูหลัก" class="fixed inset-y-0 left-0 z-50 flex w-[266px] max-w-[calc(100vw-24px)] flex-col border-r border-line bg-white transition-transform duration-200 lg:translate-x-0 lg:visible lg:pointer-events-auto ${mobileOpen ? 'translate-x-0 visible pointer-events-auto' : '-translate-x-full invisible pointer-events-none'}" ${mobileOpen ? 'aria-hidden="false"' : 'aria-hidden="true"'}>
+    <div id="mobile-backdrop" class="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm transition-opacity duration-300 motion-reduce:transition-none lg:hidden ${mobileOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'}" data-action="close-menu" aria-hidden="true"></div>
+    <aside id="sidebar" role="complementary" aria-label="แถบเมนูหลัก" class="fixed inset-y-0 left-0 z-50 flex w-[266px] max-w-[calc(100vw-24px)] flex-col border-r border-line bg-white transition-transform duration-200 motion-reduce:transition-none lg:translate-x-0 lg:visible lg:pointer-events-auto ${mobileOpen ? 'translate-x-0 visible pointer-events-auto' : '-translate-x-full invisible pointer-events-none'}" ${mobileOpen ? 'aria-hidden="false"' : 'aria-hidden="true"'}>
       <div class="flex h-[72px] items-center gap-3 border-b border-line px-5 sm:px-6">
         <img src="${logoUrl}" alt="ตราเทศบาลนครนนทบุรี" class="h-12 w-12 shrink-0 object-contain drop-shadow-sm">
         <div class="min-w-0 flex-1"><div class="text-[15px] font-bold tracking-tight text-ink leading-snug">เทศบาลนครนนทบุรี</div><div class="text-[11px] font-medium tracking-wide text-muted">ฐานข้อมูลฝ่ายบริการ</div></div>
