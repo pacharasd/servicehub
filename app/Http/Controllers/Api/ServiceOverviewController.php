@@ -41,20 +41,28 @@ class ServiceOverviewController extends Controller
             $query = DB::table($table)->whereNull('deleted_at');
             $summary[$module] = (clone $query)->count();
             $periodQuery = (clone $query)->whereBetween('service_date', [$from, $to]);
-            $metrics = [];
+            $sumColumns = [];
+            $metricFields = [];
             foreach ($definition['fields'] as $column => $kind) {
                 if ($kind === 'decimal' || $kind === 'integer') {
                     if ($column === 'fertilizer_remaining') {
                         continue;
                     }
-                    $metrics[$column] = (float) (clone $periodQuery)->sum($column);
+                    $sumColumns[] = "COALESCE(SUM({$column}), 0) as `sum_{$column}`";
+                    $metricFields[] = $column;
                 }
+            }
+            $selectSql = 'COUNT(*) as `period_count`'.($sumColumns ? ', '.implode(', ', $sumColumns) : '');
+            $agg = (clone $periodQuery)->selectRaw($selectSql)->first();
+            $count = (int) ($agg->period_count ?? 0);
+            $metrics = [];
+            foreach ($metricFields as $column) {
+                $metrics[$column] = (float) ($agg->{"sum_{$column}"} ?? 0);
             }
             if ($module === 'septic-treatments') {
                 $latest = (clone $periodQuery)->orderByDesc('service_date')->orderByDesc('id')->value('fertilizer_remaining');
                 $metrics['fertilizer_remaining_latest'] = $latest === null ? null : (float) $latest;
             }
-            $count = (clone $periodQuery)->count();
             $modules[$module] = ['group' => $definition['group'], 'count' => $count, 'metrics' => $metrics];
             $groups[$definition['group']] = ($groups[$definition['group']] ?? 0) + $count;
 

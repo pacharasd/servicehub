@@ -1,29 +1,24 @@
 {
-  "_view-activities-BNCmQJ2l.js": {
-    "file": "assets/view-activities-BNCmQJ2l.js",
+  "_view-activities-JT5Z6O0i.js": {
+    "file": "assets/view-activities-JT5Z6O0i.js",
     "name": "view-activities",
+    "isDynamicEntry": true,
     "imports": [
-      "_view-users-BzvAMVA2.js"
+      "_view-users-U7I23hSc.js"
     ]
   },
-  "_view-analytics-Cv5yGdFv.js": {
-    "file": "assets/view-analytics-Cv5yGdFv.js",
-    "name": "view-analytics"
+  "_view-analytics-Cck_Ce96.js": {
+    "file": "assets/view-analytics-Cck_Ce96.js",
+    "name": "view-analytics",
+    "isDynamicEntry": true
   },
-  "_view-references-EhFqDfuM.js": {
-    "file": "assets/view-references-EhFqDfuM.js",
-    "name": "view-references",
-    "imports": [
-      "_view-users-BzvAMVA2.js",
-      "_view-activities-BNCmQJ2l.js"
-    ]
-  },
-  "_view-users-BzvAMVA2.js": {
-    "file": "assets/view-users-BzvAMVA2.js",
-    "name": "view-users"
+  "_view-users-U7I23hSc.js": {
+    "file": "assets/view-users-U7I23hSc.js",
+    "name": "view-users",
+    "isDynamicEntry": true
   },
   "src/assets/nonthaburi-logo.png": {
-    "file": "assets/nonthaburi-logo-BxI5auOM.png",
+    "file": "assets/nonthaburi-logo-BUg5neRh.png",
     "src": "src/assets/nonthaburi-logo.png"
   },
   "src/auth.css": {
@@ -37,21 +32,56 @@
     ]
   },
   "src/main.js": {
-    "file": "assets/main-D3qLuHrY.js",
+    "file": "assets/main-5Y8jgbW-.js",
     "name": "main",
     "src": "src/main.js",
     "isEntry": true,
     "imports": [
-      "_view-activities-BNCmQJ2l.js",
-      "_view-users-BzvAMVA2.js",
-      "_view-analytics-Cv5yGdFv.js",
-      "_view-references-EhFqDfuM.js"
+      "_view-activities-JT5Z6O0i.js",
+      "_view-users-U7I23hSc.js",
+      "_view-analytics-Cck_Ce96.js"
+    ],
+    "dynamicImports": [
+      "_view-users-U7I23hSc.js",
+      "_view-activities-JT5Z6O0i.js",
+      "src/views/references.js",
+      "src/views/profile.js",
+      "src/views/auditLogs.js",
+      "_view-analytics-Cck_Ce96.js"
     ],
     "css": [
       "assets/auth-BQNcSlU-.css"
     ],
     "assets": [
-      "assets/nonthaburi-logo-BxI5auOM.png"
+      "assets/nonthaburi-logo-BUg5neRh.png"
+    ]
+  },
+  "src/views/auditLogs.js": {
+    "file": "assets/auditLogs-EhEHDz_B.js",
+    "name": "auditLogs",
+    "src": "src/views/auditLogs.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_view-users-U7I23hSc.js"
+    ]
+  },
+  "src/views/profile.js": {
+    "file": "assets/profile-55sDldx5.js",
+    "name": "profile",
+    "src": "src/views/profile.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_view-users-U7I23hSc.js"
+    ]
+  },
+  "src/views/references.js": {
+    "file": "assets/view-references-BtGOm958.js",
+    "name": "view-references",
+    "src": "src/views/references.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "_view-users-U7I23hSc.js",
+      "_view-activities-JT5Z6O0i.js"
     ]
   }
 }

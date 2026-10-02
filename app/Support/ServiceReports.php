@@ -88,6 +88,14 @@ class ServiceReports
         $previous = $this->query($table, $period['comparison_from'], $period['comparison_to']);
         $count = (clone $current)->count();
         $previousCount = (clone $previous)->count();
+        $sumColumns = [];
+        foreach ($definition['fields'] as $column => $kind) {
+            if (in_array($kind, ['decimal', 'integer'], true) && $column !== 'fertilizer_remaining') {
+                $sumColumns[] = "COALESCE(SUM({$column}), 0) as `sum_{$column}`";
+            }
+        }
+        $currentAgg = $sumColumns ? (clone $current)->selectRaw(implode(', ', $sumColumns))->first() : null;
+
         $quantities = [];
         foreach ($definition['fields'] as $column => $kind) {
             if (! in_array($kind, ['decimal', 'integer'], true)) {
@@ -115,7 +123,7 @@ class ServiceReports
             } else {
                 $quantities[$column] = [[
                     'unit' => $unit,
-                    'total' => (float) (clone $current)->sum($column),
+                    'total' => (float) ($currentAgg?->{"sum_{$column}"} ?? 0),
                     'kind' => 'sum',
                 ]];
             }

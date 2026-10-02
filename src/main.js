@@ -21,14 +21,16 @@ import {
   toggleSidebarGroup,
 } from './components/navigation.js';
 
-// Feature Views
+// Core Landing View
 import { dashboardContent } from './dashboard.js';
-import { reportBody } from './reports.js';
-import { renderUsersView } from './views/users.js';
-import { renderActivitiesView, submitActivity, deleteActivity, refreshActivityData } from './views/activities.js';
-import { renderReferencesView, submitReference, deleteReference, refreshReferenceData } from './views/references.js';
-import { renderProfileView } from './views/profile.js';
-import { renderAuditLogsView } from './views/auditLogs.js';
+
+// Lazy-loaded Feature View Loaders
+const loadUsersView = () => import('./views/users.js');
+const loadActivitiesView = () => import('./views/activities.js');
+const loadReferencesView = () => import('./views/references.js');
+const loadProfileView = () => import('./views/profile.js');
+const loadAuditLogsView = () => import('./views/auditLogs.js');
+const loadReportsView = () => import('./reports.js');
 
 const app = document.querySelector('#app');
 
@@ -94,7 +96,7 @@ async function loadReports(parts, params) {
   const requestId = ++reportRequest;
   reportLoading = true;
   reportError = '';
-  renderReports(parts, params);
+  await renderReports(parts, params);
 
   try {
     const template = window.serviceHubUrls?.apiReportDetail || '/api/reports/__MODULE__';
@@ -111,12 +113,13 @@ async function loadReports(parts, params) {
   } finally {
     if (requestId === reportRequest) {
       reportLoading = false;
-      renderReports(parts, params);
+      await renderReports(parts, params);
     }
   }
 }
 
-function renderReports(parts, params) {
+async function renderReports(parts, params) {
+  const { reportBody } = await loadReportsView();
   const module = parts[1] ? modules.find((m) => m.id === parts[1]) : null;
   const content = reportBody({
     module,
@@ -153,6 +156,7 @@ const routes = {
       return;
     }
     expandActiveSidebarGroup('users');
+    const { renderUsersView } = await loadUsersView();
     app.innerHTML = renderShell(renderUsersView(ctx), 'users', [{ label: 'จัดการผู้ใช้งาน', current: true }]);
     initCustomSelects();
   },
@@ -166,6 +170,7 @@ const routes = {
     expandActiveSidebarGroup(moduleId);
     const mod = modules.find((m) => m.id === moduleId);
     const crumbs = mod ? [{ label: mod.short, current: true }] : [];
+    const { renderActivitiesView } = await loadActivitiesView();
     app.innerHTML = renderShell(await renderActivitiesView(ctx), moduleId, crumbs);
     initCustomSelects();
   },
@@ -175,6 +180,7 @@ const routes = {
       return;
     }
     expandActiveSidebarGroup('cleaning-zones');
+    const { renderReferencesView } = await loadReferencesView();
     app.innerHTML = renderShell(await renderReferencesView('cleaning-zones', ctx), 'cleaning-zones', [{ label: 'เขตรักษาความสะอาด', current: true }]);
     initCustomSelects();
   },
@@ -184,11 +190,13 @@ const routes = {
       return;
     }
     expandActiveSidebarGroup('waste-types');
+    const { renderReferencesView } = await loadReferencesView();
     app.innerHTML = renderShell(await renderReferencesView('waste-types', ctx), 'waste-types', [{ label: 'ประเภทขยะมูลฝอย', current: true }]);
     initCustomSelects();
   },
   profile: async (ctx) => {
     expandActiveSidebarGroup('profile');
+    const { renderProfileView } = await loadProfileView();
     app.innerHTML = renderShell(renderProfileView(ctx), 'profile', [{ label: 'โปรไฟล์ของฉัน', current: true }]);
   },
   'audit-logs': async (ctx) => {
@@ -197,6 +205,7 @@ const routes = {
       return;
     }
     expandActiveSidebarGroup('audit-logs');
+    const { renderAuditLogsView } = await loadAuditLogsView();
     app.innerHTML = renderShell(await renderAuditLogsView(ctx), 'audit-logs', [{ label: 'ประวัติการแก้ไข', current: true }]);
   },
   reports: async (ctx) => {
@@ -276,6 +285,7 @@ function bindGlobalEvents() {
     if (action === 'delete-activity') {
       const moduleId = trigger.dataset.module;
       const recordId = trigger.dataset.id;
+      const { deleteActivity, refreshActivityData } = await loadActivitiesView();
       await deleteActivity(moduleId, recordId, {
         navigate,
         showToast,
@@ -288,6 +298,7 @@ function bindGlobalEvents() {
       const id = trigger.dataset.id;
       const name = trigger.dataset.name;
       const usage = Number(trigger.dataset.usage) || 0;
+      const { deleteReference, refreshReferenceData } = await loadReferencesView();
       await deleteReference(type, id, name, usage, {
         navigate,
         showToast,
@@ -319,19 +330,22 @@ function bindGlobalEvents() {
     }
   });
 
-  document.addEventListener('submit', (e) => {
+  document.addEventListener('submit', async (e) => {
     if (e.target.id === 'record-form') {
       e.preventDefault();
+      const { submitActivity } = await loadActivitiesView();
       submitActivity(e.target);
       return;
     }
     if (e.target.id === 'zone-form') {
       e.preventDefault();
+      const { submitReference } = await loadReferencesView();
       submitReference(e.target, 'cleaning-zones');
       return;
     }
     if (e.target.id === 'wasteType-form') {
       e.preventDefault();
+      const { submitReference } = await loadReferencesView();
       submitReference(e.target, 'waste-types');
       return;
     }
