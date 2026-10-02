@@ -37,4 +37,8 @@ Route::middleware(['auth', EnsureActiveAccount::class])->group(function () {
     Route::get('/', function () {
         return view('app');
     })->name('dashboard');
+
+    Route::get('/{any}', function () {
+        return view('app');
+    })->where('any', 'dashboard|users|profile|audit-logs|reports|cleaning-zones|waste-types|module/.*');
 });
