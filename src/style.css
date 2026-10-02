@@ -1,7 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
 @import "tailwindcss";
-@source "./main.js";
-@source "./dashboard.js";
+@source "./**/*.js";
+@source "../resources/views/**/*.blade.php";
 
 @theme {
   --font-sans: "Sarabun", "Noto Sans Thai", "Leelawadee UI", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -140,6 +139,9 @@ button { cursor: pointer; }
 .scrollbar-thin { scrollbar-width: thin; scrollbar-color: #b8c9c0 transparent; }
 .panel-shadow { width: 100% !important; max-width: 100% !important; min-width: 0 !important; box-sizing: border-box !important; box-shadow: 0 9px 32px rgba(26, 61, 52, .045); }
 .nav-active { background: #e9f5ef; color: #0d6d57; }
+/* WCAG 2.5.8 / 2.5.5 Touch Target Provisions: 44x44px minimum sizing */
+.min-h-11, .min-h-\[44px\] { min-height: 44px; }
+.min-w-11 { min-width: 44px; }
 .field { width: 100%; min-width: 0; max-width: 100%; min-height: 44px; border: 1px solid #d7e1dc; border-radius: 12px; background: #fff; padding: 10px 14px; color: #172b2b; outline: none; transition: border-color .18s, box-shadow .18s; color-scheme: light !important; }
 select.field { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667875' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 14px center; background-size: 16px; padding-right: 40px; }
 .field:focus { border-color: #199778; box-shadow: 0 0 0 3px #d6f3e8; }

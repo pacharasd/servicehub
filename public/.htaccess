@@ -35,3 +35,11 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# 1-year immutable caching for Vite compiled assets in dist/assets
+<IfModule mod_headers.c>
+    <If "%{REQUEST_URI} =~ m#dist/assets/#">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </If>
+</IfModule>
+

@@ -8,12 +8,16 @@
     <title>ServiceHub — ฐานข้อมูลฝ่ายบริการ</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap">
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @vite('src/main.js', 'dist')
 </head>
 <body>
-    <div id="app"></div>
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:rounded-xl focus:bg-primary focus:px-4 focus:py-2.5 focus:text-sm focus:font-bold focus:text-white focus:shadow-lg">ข้ามไปยังเนื้อหาหลัก</a>
+    <div id="app">
+        <main id="main-content" role="main" tabindex="-1" class="sr-only"></main>
+    </div>
     <script>
         window.serviceHubUser = {!! json_encode([
             'id'          => auth()->user()->id,

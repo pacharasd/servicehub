@@ -1,10 +1,33 @@
 {
+  "_view-activities-krC1dhD7.js": {
+    "file": "assets/view-activities-krC1dhD7.js",
+    "name": "view-activities",
+    "imports": [
+      "_view-users-CwadCYNt.js"
+    ]
+  },
+  "_view-analytics-Cv5yGdFv.js": {
+    "file": "assets/view-analytics-Cv5yGdFv.js",
+    "name": "view-analytics"
+  },
+  "_view-references-BuS9jEpV.js": {
+    "file": "assets/view-references-BuS9jEpV.js",
+    "name": "view-references",
+    "imports": [
+      "_view-users-CwadCYNt.js",
+      "_view-activities-krC1dhD7.js"
+    ]
+  },
+  "_view-users-CwadCYNt.js": {
+    "file": "assets/view-users-CwadCYNt.js",
+    "name": "view-users"
+  },
   "src/assets/nonthaburi-logo.png": {
     "file": "assets/nonthaburi-logo-BxI5auOM.png",
     "src": "src/assets/nonthaburi-logo.png"
   },
   "src/auth.css": {
-    "file": "assets/auth-BUEo_LHv.css",
+    "file": "assets/auth-BQNcSlU-.css",
     "src": "src/auth.css",
     "isEntry": true,
     "name": "auth",
@@ -14,12 +37,18 @@
     ]
   },
   "src/main.js": {
-    "file": "assets/main-dHOFxpNc.js",
+    "file": "assets/main-CqD1StBs.js",
     "name": "main",
     "src": "src/main.js",
     "isEntry": true,
+    "imports": [
+      "_view-activities-krC1dhD7.js",
+      "_view-users-CwadCYNt.js",
+      "_view-analytics-Cv5yGdFv.js",
+      "_view-references-BuS9jEpV.js"
+    ],
     "css": [
-      "assets/auth-BUEo_LHv.css"
+      "assets/auth-BQNcSlU-.css"
     ],
     "assets": [
       "assets/nonthaburi-logo-BxI5auOM.png"
