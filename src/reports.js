@@ -1,3 +1,5 @@
+import { renderDatePresets } from './utils/filter.js';
+
 export function reportBody({ module, params, data, meta, loading, error, modules, groups, can, esc, number, thaiDate, moduleHref }) {
   const currentMonth = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Bangkok' }).slice(0, 7);
   const mode = params.has('from') || params.has('to') ? 'custom' : 'month';
@@ -32,7 +34,42 @@ export function reportBody({ module, params, data, meta, loading, error, modules
     ? `<ol class="mt-4 max-h-[34rem] space-y-3 overflow-y-auto" aria-label="จำนวนรายการตามวันที่ดำเนินงาน">${trend.map(point => `<li class="grid min-w-0 grid-cols-[6.5rem_minmax(0,1fr)_3rem] items-center gap-2 text-xs sm:grid-cols-[8rem_minmax(0,1fr)_4rem]"><time datetime="${esc(point.date)}">${thaiDate(point.date)}</time><span class="h-3 rounded-full bg-[#e8f0eb]"><span class="block h-3 rounded-full bg-primary" style="width:${Math.max(3, point.count / maxTrend * 100)}%"></span></span><strong class="text-right">${number(point.count)}</strong></li>`).join('')}</ol>`
     : '<p class="mt-4 text-sm text-muted">ไม่มีรายการในช่วงที่เลือก</p>';
 
-  const filter = `<section class="report-controls no-print panel-shadow rounded-2xl border border-line bg-white p-4 sm:p-5"><form id="report-filter" data-report-module="${esc(module?.id || '')}" class="space-y-4"><div class="flex flex-wrap gap-4"><label class="inline-flex min-h-11 items-center gap-2 text-sm font-semibold"><input type="radio" name="period_mode" value="month" ${mode === 'month' ? 'checked' : ''}>รายเดือน</label><label class="inline-flex min-h-11 items-center gap-2 text-sm font-semibold"><input type="radio" name="period_mode" value="custom" ${mode === 'custom' ? 'checked' : ''}>กำหนดช่วงวันที่</label></div><div data-report-month ${mode === 'custom' ? 'hidden' : ''}><label for="report-month" class="mb-1 block text-sm font-semibold">เดือนที่ดำเนินงาน</label><input id="report-month" class="field max-w-sm" type="month" name="month" value="${esc(month)}" ${mode === 'custom' ? 'disabled' : ''} required></div><div data-report-custom class="grid gap-3 sm:grid-cols-2" ${mode === 'month' ? 'hidden' : ''}><div><label for="report-from" class="mb-1 block text-sm font-semibold">ตั้งแต่วันที่</label><input id="report-from" class="field" type="date" name="from" value="${esc(params.get('from') || '')}" ${mode === 'month' ? 'disabled' : ''} required></div><div><label for="report-to" class="mb-1 block text-sm font-semibold">ถึงวันที่</label><input id="report-to" class="field" type="date" name="to" value="${esc(params.get('to') || '')}" ${mode === 'month' ? 'disabled' : ''} required></div></div><p id="report-filter-error" class="text-sm text-red-700" role="alert"></p><div class="flex flex-wrap gap-2"><button class="min-h-11 rounded-xl bg-primary px-5 font-bold text-white" type="submit">แสดงรายงาน</button><button class="min-h-11 rounded-xl border border-line px-4 font-semibold" type="button" data-action="print-report">พิมพ์ / บันทึก PDF</button>${canExport ? `<a class="inline-flex min-h-11 items-center rounded-xl border border-line px-4 font-semibold text-primary" href="${esc(exportUrl)}">ส่งออกสรุป CSV</a>` : ''}</div></form></section>`;
+  const filter = `
+    <section class="report-controls no-print panel-shadow rounded-2xl border border-line bg-white p-4 sm:p-5">
+      <form id="report-filter" data-report-module="${esc(module?.id || '')}" class="space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex flex-wrap gap-4">
+            <label class="inline-flex min-h-11 items-center gap-2 text-sm font-semibold"><input type="radio" name="period_mode" value="month" ${mode === 'month' ? 'checked' : ''}>รายเดือน</label>
+            <label class="inline-flex min-h-11 items-center gap-2 text-sm font-semibold"><input type="radio" name="period_mode" value="custom" ${mode === 'custom' ? 'checked' : ''}>กำหนดช่วงวันที่</label>
+          </div>
+          <div data-report-custom ${mode === 'month' ? 'hidden' : ''}>
+            ${renderDatePresets({ from: params.get('from') || '', to: params.get('to') || '', formId: 'report-filter' })}
+          </div>
+        </div>
+        <div data-report-month ${mode === 'custom' ? 'hidden' : ''}>
+          <label for="report-month" class="mb-1 block text-sm font-semibold">เดือนที่ดำเนินงาน</label>
+          <input id="report-month" class="field max-w-sm" type="month" name="month" value="${esc(month)}" ${mode === 'custom' ? 'disabled' : ''} required>
+        </div>
+        <div data-report-custom class="grid gap-3 sm:grid-cols-2" ${mode === 'month' ? 'hidden' : ''}>
+          <div>
+            <label for="report-from" class="mb-1 block text-sm font-semibold">ตั้งแต่วันที่</label>
+            <input id="report-from" class="field" type="date" name="from" value="${esc(params.get('from') || '')}" ${mode === 'month' ? 'disabled' : ''} required>
+          </div>
+          <div>
+            <label for="report-to" class="mb-1 block text-sm font-semibold">ถึงวันที่</label>
+            <input id="report-to" class="field" type="date" name="to" value="${esc(params.get('to') || '')}" ${mode === 'month' ? 'disabled' : ''} required>
+          </div>
+        </div>
+        <p id="report-filter-error" class="text-sm text-red-700" role="alert"></p>
+        <div class="flex flex-wrap gap-2">
+          <button class="min-h-11 rounded-xl bg-primary px-5 font-bold text-white hover:bg-primary-dark" type="submit">แสดงรายงาน</button>
+          <a href="#/reports${module ? `/${encodeURIComponent(module.id)}` : ''}" data-action="clear-filters" class="inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-sm font-semibold text-muted hover:bg-[#f6faf7]">ล้างตัวกรอง</a>
+          <button class="min-h-11 rounded-xl border border-line px-4 font-semibold" type="button" data-action="print-report">พิมพ์ / บันทึก PDF</button>
+          ${canExport ? `<a class="inline-flex min-h-11 items-center rounded-xl border border-line px-4 font-semibold text-primary" href="${esc(exportUrl)}">ส่งออกสรุป CSV</a>` : ''}
+        </div>
+      </form>
+    </section>
+  `;
 
   let content = '';
   if (loading) content = '<section class="panel-shadow rounded-2xl border border-line bg-white p-6 text-sm text-muted" role="status">กำลังโหลดรายงาน…</section>';

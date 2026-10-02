@@ -199,6 +199,16 @@ class ServiceOverviewController extends Controller
             $term = mb_substr(trim((string) $request->input('q')), 0, 100);
             $query->where(fn ($q) => $q->where('audit_logs.action', 'like', '%'.$term.'%')->orWhere('audit_logs.subject_type', 'like', '%'.$term.'%')->orWhere('users.username', 'like', '%'.$term.'%'));
         }
+        if ($request->filled('action') && $request->input('action') !== 'all') {
+            $act = mb_substr(trim((string) $request->input('action')), 0, 50);
+            $query->where('audit_logs.action', 'like', '%'.$act.'%');
+        }
+        if ($request->filled('from')) {
+            $query->whereDate('audit_logs.created_at', '>=', $request->input('from'));
+        }
+        if ($request->filled('to')) {
+            $query->whereDate('audit_logs.created_at', '<=', $request->input('to'));
+        }
         $page = $query->orderByDesc('audit_logs.id')->paginate(min(100, max(1, (int) $request->input('per_page', 20))));
 
         return response()->json(['data' => $page->items(), 'meta' => ['total' => $page->total(), 'current_page' => $page->currentPage(), 'last_page' => $page->lastPage()]]);

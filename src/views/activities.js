@@ -11,6 +11,7 @@ import { pageHeading, primaryButton, outlinedButton } from '../utils/layout.js';
 import { showConfirmModal } from '../components/confirmModal.js';
 import { showToast } from '../components/toast.js';
 import { navigate } from '../router.js';
+import { renderDatePresets } from '../utils/filter.js';
 
 // Module state for activities
 let activityRecords = [];
@@ -198,12 +199,16 @@ export function listPage({ module, group, params, records = activityRecords, ref
   return `
     ${pageHeading(group?.label || '', module.label, `จัดการข้อมูล${module.short} ค้นหาและกรองรายการตามช่วงวันที่`, can(`${module.id}.create`) ? primaryButton('เพิ่มข้อมูล', `#/module/${module.id}/new`) : '')}
     <section aria-label="ตัวกรองรายการ" class="panel-shadow mb-5 w-full max-w-full min-w-0 rounded-2xl border border-line bg-white p-4 sm:p-5">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-muted">ตัวกรองข้อมูล</h2>
+        ${renderDatePresets({ from, to, formId: 'filter-form' })}
+      </div>
       <form id="filter-form" data-module="${module.id}" class="flex flex-wrap items-end gap-3">
         <div class="w-full min-w-0 sm:min-w-[180px] sm:flex-1">
           <label for="search" class="mb-1.5 block text-xs font-bold text-[#52665d]">ค้นหา</label>
           <div class="relative">
             ${icon('search', 18, 'pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9daf9f]')}
-            <input id="search" name="q" class="field pl-10" type="search" placeholder="ค้นหาข้อมูล..." value="${esc(query)}">
+            <input id="search" name="q" class="field pl-10" type="search" placeholder="พิมพ์ค้นหาทันที..." value="${esc(query)}" data-action="live-filter" autocomplete="off">
           </div>
         </div>
         <button type="button" data-action="toggle-mobile-filters" data-module="${module.id}" aria-expanded="${filtersOpen}" aria-controls="advanced-filters-${module.id}" class="inline-flex min-h-11 w-full items-center justify-between rounded-xl border border-line px-4 text-sm font-semibold text-primary-dark md:hidden">
@@ -212,22 +217,22 @@ export function listPage({ module, group, params, records = activityRecords, ref
         <div id="advanced-filters-${module.id}" class="${filtersOpen ? 'flex' : 'hidden'} w-full flex-wrap items-end gap-3 md:contents">
           <div class="w-full min-w-0 sm:w-[150px]">
             <label for="date-from" class="mb-1.5 block text-xs font-bold text-[#52665d]">ตั้งแต่วันที่</label>
-            <input id="date-from" class="field" type="date" name="from" value="${esc(from)}">
+            <input id="date-from" class="field" type="date" name="from" value="${esc(from)}" data-action="live-filter">
           </div>
           <div class="w-full min-w-0 sm:w-[150px]">
             <label for="date-to" class="mb-1.5 block text-xs font-bold text-[#52665d]">ถึงวันที่</label>
-            <input id="date-to" class="field" type="date" name="to" value="${esc(to)}">
+            <input id="date-to" class="field" type="date" name="to" value="${esc(to)}" data-action="live-filter">
           </div>
           ${selectFilters}
           <div class="w-full min-w-0 sm:w-[150px]">
             <label for="sort" class="mb-1.5 block text-xs font-bold text-[#52665d]">เรียงตาม</label>
-            <select id="sort" name="sort" class="field">
+            <select id="sort" name="sort" class="field" data-action="live-filter">
               <option value="newest" ${sort === 'newest' ? 'selected' : ''}>วันที่ล่าสุด</option>
               <option value="oldest" ${sort === 'oldest' ? 'selected' : ''}>วันที่เก่าสุด</option>
             </select>
           </div>
           <div class="w-full sm:w-auto">
-            <a href="#/module/${module.id}" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-line px-4 text-xs font-semibold text-muted hover:bg-canvas sm:w-auto">ล้างตัวกรอง</a>
+            <a href="#/module/${module.id}" data-action="clear-filters" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-line px-4 text-xs font-semibold text-muted hover:bg-canvas sm:w-auto">ล้างตัวกรอง</a>
           </div>
         </div>
       </form>

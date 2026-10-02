@@ -1,3 +1,5 @@
+import { renderDatePresets } from './utils/filter.js';
+
 const metricUnits = {
   distance_km: 'กม.', quantity: 'ตัน', weight: 'ตัน', sediment_quantity: 'ลบ.ม.',
   volume: 'ลบ.ม.', fee_amount: 'บาท', sludge_quantity: 'กก.',
@@ -25,8 +27,26 @@ export function dashboardContent({ data, loading, error, params, groups, modules
   const defaultTo = new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
   const from = params.get('from') ?? data?.period?.from ?? defaultFrom;
   const to = params.get('to') ?? data?.period?.to ?? defaultTo;
+  const isCustom = from !== defaultFrom || to !== defaultTo;
   const heading = `<div class="mb-5 sm:mb-6"><p class="text-xs font-bold tracking-[.16em] text-primary">ภาพรวมระบบ</p><h1 class="mt-2 text-2xl font-bold text-ink sm:text-3xl">แดชบอร์ดฝ่ายบริการ</h1><p class="mt-2 text-sm text-muted">ติดตามงานบริการจากฐานข้อมูลจริงตามสิทธิ์ของคุณ</p></div>`;
-  const filter = `<section aria-labelledby="dashboard-filter-title" class="panel-shadow mb-5 rounded-2xl border border-line bg-white p-4 sm:p-5"><div class="mb-3"><h2 id="dashboard-filter-title" class="font-bold text-ink">ช่วงวันที่ดำเนินงาน</h2><p class="text-xs text-muted">ตัวเลขหลักใช้วันที่ดำเนินงาน รวมวันเริ่มต้นและวันสิ้นสุด</p></div><form id="dashboard-filter" class="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] sm:items-end"><label class="min-w-0 text-sm font-semibold">ตั้งแต่วันที่<input class="field mt-1" type="date" name="from" value="${esc(from)}" required></label><label class="min-w-0 text-sm font-semibold">ถึงวันที่<input class="field mt-1" type="date" name="to" value="${esc(to)}" required></label><button type="submit" class="min-h-11 rounded-xl bg-primary px-5 font-bold text-white hover:bg-primary-dark">แสดงข้อมูล</button><a href="#/dashboard" class="flex min-h-11 items-center justify-center rounded-xl border border-line px-4 text-sm font-semibold text-ink hover:bg-[#f6faf7]">เดือนปัจจุบัน</a></form><p id="dashboard-filter-error" role="alert" class="mt-2 hidden text-sm text-red-700"></p></section>`;
+  const filter = `
+    <section aria-labelledby="dashboard-filter-title" class="panel-shadow mb-5 rounded-2xl border border-line bg-white p-4 sm:p-5">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div>
+          <h2 id="dashboard-filter-title" class="font-bold text-ink">ช่วงวันที่ดำเนินงาน</h2>
+          <p class="text-xs text-muted">ตัวเลขหลักใช้วันที่ดำเนินงาน รวมวันเริ่มต้นและวันสิ้นสุด</p>
+        </div>
+        ${renderDatePresets({ from, to, formId: 'dashboard-filter' })}
+      </div>
+      <form id="dashboard-filter" class="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto_auto] sm:items-end">
+        <label class="min-w-0 text-sm font-semibold">ตั้งแต่วันที่<input class="field mt-1" type="date" name="from" value="${esc(from)}" required></label>
+        <label class="min-w-0 text-sm font-semibold">ถึงวันที่<input class="field mt-1" type="date" name="to" value="${esc(to)}" required></label>
+        <button type="submit" class="min-h-11 rounded-xl bg-primary px-5 font-bold text-white hover:bg-primary-dark">กรองข้อมูล</button>
+        ${isCustom ? `<a href="#/dashboard" class="flex min-h-11 items-center justify-center rounded-xl border border-line px-4 text-sm font-semibold text-muted hover:bg-[#f6faf7]" title="คืนค่าเป็นเดือนปัจจุบัน">ล้างตัวกรอง</a>` : `<a href="#/dashboard" class="flex min-h-11 items-center justify-center rounded-xl border border-line px-4 text-sm font-semibold text-ink hover:bg-[#f6faf7]">เดือนปัจจุบัน</a>`}
+      </form>
+      <p id="dashboard-filter-error" role="alert" class="mt-2 hidden text-sm text-red-700"></p>
+    </section>
+  `;
 
   if (loading || (!data && !error)) return `${heading}${filter}<div role="status" aria-live="polite" class="panel-shadow rounded-2xl border border-line bg-white p-6 text-sm text-muted">กำลังโหลดข้อมูลภาพรวม…</div>`;
   if (error) return `${heading}${filter}<div role="alert" class="panel-shadow rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700"><p class="font-semibold">โหลดข้อมูลภาพรวมไม่สำเร็จ</p><p class="mt-1">${esc(error)}</p><button type="button" data-action="retry-dashboard" class="mt-3 min-h-11 rounded-xl border border-red-300 bg-white px-4 font-semibold">ลองอีกครั้ง</button></div>`;

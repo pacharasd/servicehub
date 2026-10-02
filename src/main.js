@@ -11,6 +11,7 @@ import { icon } from './utils/icons.js';
 import { primaryButton, outlinedButton } from './utils/layout.js';
 import { initToastContainer, showToast } from './components/toast.js';
 import { initCustomSelects } from './components/select.js';
+import { debounce } from './utils/filter.js';
 import {
   initShell,
   renderShell,
@@ -328,6 +329,25 @@ function bindGlobalEvents() {
       panel?.classList.toggle('flex', !expanded);
       return;
     }
+    if (action === 'set-date-preset') {
+      const from = trigger.dataset.from;
+      const to = trigger.dataset.to;
+      const formId = trigger.dataset.form;
+      const form = formId ? document.getElementById(formId) : trigger.closest('form');
+      if (form) {
+        if (form.elements.period_mode) {
+          const customRadio = form.querySelector('input[name="period_mode"][value="custom"]');
+          if (customRadio) {
+            customRadio.checked = true;
+            customRadio.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        }
+        if (form.elements.from) form.elements.from.value = from;
+        if (form.elements.to) form.elements.to.value = to;
+        form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      }
+      return;
+    }
   });
 
   document.addEventListener('submit', async (e) => {
@@ -405,6 +425,7 @@ function bindGlobalEvents() {
       const data = new FormData(e.target);
       const params = new URLSearchParams();
       if (String(data.get('q') || '').trim()) params.set('q', String(data.get('q')).trim());
+      if (data.get('status') && data.get('status') !== 'all') params.set('status', data.get('status'));
       if (data.get('sort') === 'name') params.set('sort', 'name');
       navigate(`/cleaning-zones${params.size ? `?${params}` : ''}`);
       return;
@@ -414,13 +435,44 @@ function bindGlobalEvents() {
       const data = new FormData(e.target);
       const params = new URLSearchParams();
       if (String(data.get('q') || '').trim()) params.set('q', String(data.get('q')).trim());
+      if (data.get('status') && data.get('status') !== 'all') params.set('status', data.get('status'));
       if (data.get('sort') === 'name') params.set('sort', 'name');
       navigate(`/waste-types${params.size ? `?${params}` : ''}`);
       return;
     }
+    if (e.target.id === 'audit-filter') {
+      e.preventDefault();
+      const data = new FormData(e.target);
+      const params = new URLSearchParams();
+      if (String(data.get('q') || '').trim()) params.set('q', String(data.get('q')).trim());
+      if (data.get('action') && data.get('action') !== 'all') params.set('action', data.get('action'));
+      if (data.get('from')) params.set('from', data.get('from'));
+      if (data.get('to')) params.set('to', data.get('to'));
+      navigate(`/audit-logs${params.size ? `?${params}` : ''}`);
+      return;
+    }
+  });
+
+  const debouncedFormSubmit = debounce((form) => {
+    if (form && form.isConnected) {
+      form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    }
+  }, 300);
+
+  document.addEventListener('input', (e) => {
+    if (e.target.dataset.action === 'live-filter' && e.target.type !== 'date') {
+      const form = e.target.form;
+      if (form) debouncedFormSubmit(form);
+    }
   });
 
   document.addEventListener('change', (e) => {
+    if (e.target.dataset.action === 'live-filter') {
+      const form = e.target.form;
+      if (form) {
+        form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      }
+    }
     if (e.target.name === 'period_mode' && e.target.closest('#report-filter')) {
       const form = e.target.form;
       const custom = e.target.value === 'custom';
