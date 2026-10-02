@@ -70,6 +70,7 @@ export function showConfirmModal({
     `;
 
     document.body.appendChild(modalRoot);
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
     const cancelBtn = modalRoot.querySelector('#confirm-modal-cancel');
@@ -78,7 +79,7 @@ export function showConfirmModal({
     const cleanup = (result) => {
       document.removeEventListener('keydown', onKeydown);
       modalRoot.remove();
-      document.body.style.overflow = '';
+      document.body.style.overflow = previousOverflow;
       if (triggerElement && typeof triggerElement.focus === 'function') {
         triggerElement.focus();
       }

@@ -118,16 +118,18 @@ export function openDrawer({
   };
 
   // กำหนดโฟกัสเริ่มต้น
-  setTimeout(() => {
-    const panel = document.getElementById('drawer-panel');
-    if (!panel) return;
-    const target = initialFocusSelector ? panel.querySelector(initialFocusSelector) : null;
-    if (target && typeof target.focus === 'function') {
-      target.focus();
-    } else {
-      panel.querySelector('button[data-action="drawer-close"]')?.focus();
-    }
-  }, 50);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const panel = document.getElementById('drawer-panel');
+      if (!panel) return;
+      const target = initialFocusSelector ? panel.querySelector(initialFocusSelector) : null;
+      if (target && typeof target.focus === 'function') {
+        target.focus();
+      } else {
+        panel.querySelector('button[data-action="drawer-close"]')?.focus();
+      }
+    });
+  });
 
   return drawerRoot;
 }

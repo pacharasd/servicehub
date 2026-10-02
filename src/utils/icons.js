@@ -49,7 +49,13 @@ export const icons = {
  * @returns {string}
  */
 export function icon(name, size = 20, cls = '', attrs = {}) {
-  const content = icons[name] || icons.grid;
+  const content = icons[name];
+  if (!content) {
+    if (typeof process === 'undefined' || process.env?.NODE_ENV !== 'production') {
+      console.warn(`[icons] ไม่พบ icon ชื่อ "${name}" — ใช้ "grid" แทน`);
+    }
+  }
+  const svgContent = content || icons.grid;
   const isAccessible = Boolean(attrs['aria-label'] || attrs.title || attrs.role === 'img');
 
   const defaultAria = isAccessible
@@ -61,5 +67,5 @@ export function icon(name, size = 20, cls = '', attrs = {}) {
     .map(([k, v]) => `${k}="${esc(v)}"`)
     .join(' ');
 
-  return `<svg class="${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ${defaultAria} ${extraAttrs}>${content}</svg>`;
+  return `<svg class="${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ${defaultAria} ${extraAttrs}>${svgContent}</svg>`;
 }

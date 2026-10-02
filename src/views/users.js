@@ -219,9 +219,9 @@ export function userTable(users, meta) {
       <div class="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3.5 text-xs text-muted sm:px-6 sm:py-4">
         <span>แสดง ${number((cp - 1) * pp + 1)}–${number(Math.min(cp * pp, total))} จาก ${number(total)} บัญชี</span>
         <div class="flex items-center gap-2">
-          <button type="button" data-action="um-page" data-page="${cp - 1}" class="inline-flex min-h-11 items-center rounded-lg border border-line px-3 py-1.5 ${cp === 1 ? 'pointer-events-none opacity-45' : 'hover:bg-canvas'}" ${cp === 1 ? 'aria-disabled="true" tabindex="-1"' : ''}>ก่อนหน้า</button>
+          <button type="button" data-action="um-page" data-page="${cp - 1}" class="inline-flex min-h-11 items-center rounded-lg border border-line px-3 py-1.5 ${cp === 1 ? 'opacity-45 cursor-not-allowed' : 'hover:bg-canvas'}" ${cp === 1 ? 'disabled aria-disabled="true"' : ''}>ก่อนหน้า</button>
           <span class="px-1 font-bold text-ink">${cp} / ${lp}</span>
-          <button type="button" data-action="um-page" data-page="${cp + 1}" class="inline-flex min-h-11 items-center rounded-lg border border-line px-3 py-1.5 ${cp === lp ? 'pointer-events-none opacity-45' : 'hover:bg-canvas'}" ${cp === lp ? 'aria-disabled="true" tabindex="-1"' : ''}>ถัดไป</button>
+          <button type="button" data-action="um-page" data-page="${cp + 1}" class="inline-flex min-h-11 items-center rounded-lg border border-line px-3 py-1.5 ${cp === lp ? 'opacity-45 cursor-not-allowed' : 'hover:bg-canvas'}" ${cp === lp ? 'disabled aria-disabled="true"' : ''}>ถัดไป</button>
         </div>
       </div>` : ''}
     </section>
@@ -313,7 +313,7 @@ export function attachUserEvents(root, toastFn = showToast) {
   });
 
   root.querySelector('[data-action="um-clear-filters"]')?.addEventListener('click', () => {
-    umParams = { q: '', role: 'all', status: 'all', sort: 'created_at', direction: 'desc', page: 1 };
+    Object.assign(umParams, { q: '', role: 'all', status: 'all', sort: 'created_at', direction: 'desc', page: 1 });
     fetchUsers(toastFn);
   });
 

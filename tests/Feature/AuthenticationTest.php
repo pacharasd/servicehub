@@ -42,7 +42,7 @@ class AuthenticationTest extends TestCase
         $this->user();
         $this->post('/login', ['username' => 'staff', 'password' => self::PASSWORD])->assertRedirect(route('dashboard'));
         $this->assertAuthenticated();
-        $this->get('/')->assertOk()->assertSee('ServiceHub')->assertSee('apiUsers');
+        $this->get('/')->assertOk()->assertSee('เทศบาลนครนนทบุรี')->assertSee('apiUsers');
         $this->post('/logout')->assertRedirect(route('login'));
         $this->assertGuest();
         $this->get('/')->assertRedirect(route('login'));

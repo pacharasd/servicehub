@@ -8,6 +8,7 @@ export default defineConfig(({ command }) => ({
     outDir: 'public/dist',
     emptyOutDir: true,
     manifest: 'manifest.json',
+    sourcemap: 'hidden',
     rollupOptions: {
       input: ['src/main.js', 'src/auth.css'],
       output: {
