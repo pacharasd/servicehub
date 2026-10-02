@@ -6,6 +6,10 @@
     <meta name="theme-color" content="#f7f8f5">
     <meta name="description" content="ฐานข้อมูลฝ่ายบริการ">
     <title>เทศบาลนครนนทบุรี — ฐานข้อมูลฝ่ายบริการ</title>
+    <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/nonthaburi-logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset('images/favicon-192x192.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" onload="this.onload=null;this.rel='stylesheet'">
