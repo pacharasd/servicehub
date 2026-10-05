@@ -7,3 +7,5 @@ Use `npm run build` after frontend changes. Run `C:\xampp\php\php.exe artisan mi
 `scripts/backup-servicehub.ps1` makes a restricted SQL backup in `storage/backups` and removes backups older than 14 days. The local Windows task `ServiceHub MariaDB Daily Backup` runs at 02:00 while its user is signed in. Run the script directly when the computer will not be signed in overnight. Restore was tested against a separate temporary database. Never put backup SQL or `.env` in Git.
 
 See [FRONTEND.md](FRONTEND.md) for local setup and [AGENT.md](AGENT.md) for architecture rules.
+
+For SQL/HTTP performance checks and Plesk deployment settings, see [docs/performance-guide.md](docs/performance-guide.md).

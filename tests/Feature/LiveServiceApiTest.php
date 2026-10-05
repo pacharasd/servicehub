@@ -96,6 +96,27 @@ class LiveServiceApiTest extends TestCase
             ->assertJsonCount(1, 'data');
     }
 
+    public function test_activity_search_preserves_text_fields_and_inclusive_date_filters(): void
+    {
+        $user = $this->administrator();
+        $this->withSession(['auth_version' => $user->auth_version ?? 0])->actingAs($user, 'web');
+        $wasteType = $this->reference('waste_types');
+        DB::table('waste_collections')->insert([
+            'service_date' => '2026-10-05',
+            'source' => 'จุดเก็บ',
+            'waste_type_id' => $wasteType,
+            'waste_name' => 'ขยะทั่วไป',
+            'weight' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->getJson('/api/activities/waste-collections?q='.urlencode('จุดเก็บ').'&from=2026-10-05&to=2026-10-05')
+            ->assertOk()->assertJsonPath('meta.total', 1);
+        $this->getJson('/api/activities/waste-collections?q='.urlencode('จุดเก็บ').'&from=2026-10-06')
+            ->assertOk()->assertJsonPath('meta.total', 0);
+    }
+
     public function test_reference_usage_counts_exclude_soft_deleted_work_but_preserve_delete_protection(): void
     {
         $user = $this->administrator();

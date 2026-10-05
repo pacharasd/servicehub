@@ -48,6 +48,21 @@ class DashboardOverviewTest extends TestCase
             ->assertJsonCount(0, 'data.recent');
     }
 
+    public function test_default_dashboard_uses_at_most_three_queries_per_ordinary_module(): void
+    {
+        $this->signIn();
+        $queries = [];
+        DB::listen(function ($event) use (&$queries): void {
+            if (str_contains($event->sql, 'road_washings')) {
+                $queries[] = $event->sql;
+            }
+        });
+
+        $this->getJson('/api/dashboard')->assertOk();
+
+        $this->assertLessThanOrEqual(3, count($queries));
+    }
+
     public function test_default_dashboard_aggregates_across_all_months_when_no_filter_provided(): void
     {
         $this->signIn();
@@ -71,6 +86,21 @@ class DashboardOverviewTest extends TestCase
         $this->assertSame(2, $octOnly['total']);
         $this->assertSame(1, $octOnly['module_summary']['road-washings']['count']);
         $this->assertEquals(10.0, $octOnly['module_summary']['road-washings']['metrics']['distance_km']);
+    }
+
+    public function test_all_time_totals_include_old_records_but_trend_only_reads_displayed_months(): void
+    {
+        $this->travelTo(now('Asia/Bangkok')->setDate(2026, 10, 15)->setTime(12, 0));
+        $this->signIn();
+        $zone = DB::table('cleaning_zones')->value('id');
+        $this->add('road_washings', ['cleaning_zone_id' => $zone, 'location' => 'งานเก่า', 'distance_km' => 2], '2025-02-01');
+        $this->add('road_washings', ['cleaning_zone_id' => $zone, 'location' => 'งานวันนี้', 'distance_km' => 3], '2026-10-15');
+
+        $data = $this->getJson('/api/dashboard')->assertOk()->json('data');
+        $this->assertSame(2, $data['total']);
+        $this->assertSame(2, $data['period']['total']);
+        $this->assertSame(1, $data['today']);
+        $this->assertSame(1, array_sum(array_column($data['trend'], 'count')));
     }
 
     public function test_period_counts_units_latest_balance_soft_deletes_and_recent_creation_order(): void

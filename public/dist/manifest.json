@@ -4,7 +4,7 @@
     "src": "src/assets/nonthaburi-logo.png"
   },
   "src/auth.css": {
-    "file": "assets/auth-DS9ZVcIS.css",
+    "file": "assets/auth-CFGdLssm.css",
     "src": "src/auth.css",
     "isEntry": true,
     "name": "auth",
@@ -14,12 +14,12 @@
     ]
   },
   "src/main.js": {
-    "file": "assets/main-BwRhuWcF.js",
+    "file": "assets/main-BiUyFKCJ.js",
     "name": "main",
     "src": "src/main.js",
     "isEntry": true,
     "css": [
-      "assets/auth-DS9ZVcIS.css"
+      "assets/auth-CFGdLssm.css"
     ],
     "assets": [
       "assets/nonthaburi-logo-BUg5neRh.png"

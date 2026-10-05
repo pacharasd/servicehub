@@ -33,22 +33,21 @@ class ServiceRecordController extends Controller
         $definition = ServiceCatalog::activity($module);
         $query = $this->query($module);
         if ($request->filled('from')) {
-            $query->whereDate('service_date', '>=', $request->validate(['from' => 'date_format:Y-m-d'])['from']);
+            $query->where('service_date', '>=', $request->validate(['from' => 'date_format:Y-m-d'])['from']);
         }
         if ($request->filled('to')) {
-            $query->whereDate('service_date', '<=', $request->validate(['to' => 'date_format:Y-m-d'])['to']);
+            $query->where('service_date', '<=', $request->validate(['to' => 'date_format:Y-m-d'])['to']);
         }
         if ($request->filled('q')) {
             $term = mb_substr(trim((string) $request->input('q')), 0, 100);
-            $columns = array_keys(array_filter($definition['fields'], fn ($type) => is_int($type) || $type === 'text'));
-            $columns = array_merge($columns, array_values(array_intersect(['location', 'source', 'storage_location', 'community', 'unit'], DB::getSchemaBuilder()->getColumnListing($definition['table']))));
-            $referenceMatches = [];
-            foreach ($definition['fields'] as $column => $type) {
-                if (in_array($type, ['cleaning_zones', 'waste_types'], true)) {
-                    $referenceMatches[$column] = DB::table($type)->where('name', 'like', '%'.addcslashes($term, '%_\\').'%')->pluck('id')->all();
-                }
-            }
             if ($term !== '') {
+                $columns = array_keys(array_filter($definition['fields'], fn ($type) => is_int($type) || $type === 'text'));
+                $referenceMatches = [];
+                foreach ($definition['fields'] as $column => $type) {
+                    if (in_array($type, ['cleaning_zones', 'waste_types'], true)) {
+                        $referenceMatches[$column] = DB::table($type)->where('name', 'like', '%'.addcslashes($term, '%_\\').'%')->pluck('id')->all();
+                    }
+                }
                 $query->where(function (Builder $subquery) use ($columns, $referenceMatches, $term) {
                     foreach ($columns as $column) {
                         $subquery->orWhere($column, 'like', '%'.addcslashes($term, '%_\\').'%');

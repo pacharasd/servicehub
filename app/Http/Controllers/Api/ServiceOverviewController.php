@@ -28,26 +28,40 @@ class ServiceOverviewController extends Controller
         }
 
         $today = CarbonImmutable::now('Asia/Bangkok');
+        $todayDate = $today->toDateString();
+        if ($from && $to) {
+            $start = CarbonImmutable::parse($from, 'Asia/Bangkok');
+            $end = CarbonImmutable::parse($to, 'Asia/Bangkok');
+        } elseif ($from) {
+            $start = CarbonImmutable::parse($from, 'Asia/Bangkok');
+            $end = $today->endOfMonth();
+        } elseif ($to) {
+            $end = CarbonImmutable::parse($to, 'Asia/Bangkok');
+            $start = $end->subMonths(5)->startOfMonth();
+        } else {
+            $end = $today->endOfMonth();
+            $start = $today->subMonths(5)->startOfMonth();
+        }
         $summary = [];
         $modules = [];
         $groups = [];
         $recent = [];
         $daily = [];
+        $todayTotal = 0;
         foreach (ServiceCatalog::ACTIVITIES as $module => $definition) {
             if (! $request->user()->can($module.'.view')) {
                 continue;
             }
             $table = $definition['table'];
             $query = DB::table($table)->whereNull('deleted_at');
-            $summary[$module] = (clone $query)->count();
 
             $periodQuery = clone $query;
             if ($from && $to) {
                 $periodQuery->whereBetween('service_date', [$from, $to]);
             } elseif ($from) {
-                $periodQuery->whereDate('service_date', '>=', $from);
+                $periodQuery->where('service_date', '>=', $from);
             } elseif ($to) {
-                $periodQuery->whereDate('service_date', '<=', $to);
+                $periodQuery->where('service_date', '<=', $to);
             }
 
             $sumColumns = [];
@@ -62,7 +76,16 @@ class ServiceOverviewController extends Controller
                 }
             }
             $selectSql = 'COUNT(*) as `period_count`'.($sumColumns ? ', '.implode(', ', $sumColumns) : '');
-            $agg = (clone $periodQuery)->selectRaw($selectSql)->first();
+            if ($from || $to) {
+                $allTime = (clone $query)->selectRaw('COUNT(*) as total, SUM(CASE WHEN service_date = ? THEN 1 ELSE 0 END) as today_count', [$todayDate])->first();
+                $summary[$module] = (int) $allTime->total;
+                $todayTotal += (int) $allTime->today_count;
+                $agg = (clone $periodQuery)->selectRaw($selectSql)->first();
+            } else {
+                $agg = (clone $periodQuery)->selectRaw($selectSql.', SUM(CASE WHEN service_date = ? THEN 1 ELSE 0 END) as today_count', [$todayDate])->first();
+                $summary[$module] = (int) $agg->period_count;
+                $todayTotal += (int) $agg->today_count;
+            }
             $count = (int) ($agg->period_count ?? 0);
             $metrics = [];
             foreach ($metricFields as $column) {
@@ -75,7 +98,8 @@ class ServiceOverviewController extends Controller
             $modules[$module] = ['group' => $definition['group'], 'count' => $count, 'metrics' => $metrics];
             $groups[$definition['group']] = ($groups[$definition['group']] ?? 0) + $count;
 
-            foreach ((clone $periodQuery)->select('service_date')->selectRaw('COUNT(*) as total')->groupBy('service_date')->get() as $day) {
+            foreach ((clone $query)->whereBetween('service_date', [$start->toDateString(), $end->toDateString()])
+                ->select('service_date')->selectRaw('COUNT(*) as total')->groupBy('service_date')->get() as $day) {
                 $date = substr((string) $day->service_date, 0, 10);
                 $daily[$date] = ($daily[$date] ?? 0) + (int) $day->total;
             }
@@ -94,19 +118,6 @@ class ServiceOverviewController extends Controller
         }
         usort($recent, fn ($a, $b) => [($b['created_at'] ?? ''), $b['id']] <=> [($a['created_at'] ?? ''), $a['id']]);
 
-        if ($from && $to) {
-            $start = CarbonImmutable::parse($from, 'Asia/Bangkok');
-            $end = CarbonImmutable::parse($to, 'Asia/Bangkok');
-        } elseif ($from) {
-            $start = CarbonImmutable::parse($from, 'Asia/Bangkok');
-            $end = $today->endOfMonth();
-        } elseif ($to) {
-            $end = CarbonImmutable::parse($to, 'Asia/Bangkok');
-            $start = $end->subMonths(5)->startOfMonth();
-        } else {
-            $end = $today->endOfMonth();
-            $start = $today->subMonths(5)->startOfMonth();
-        }
         $monthly = $start->diffInDays($end) > 62;
         $trend = [];
         for ($cursor = $start; $cursor->lte($end); $cursor = $monthly ? $cursor->startOfMonth()->addMonth() : $cursor->addWeek()) {
@@ -122,7 +133,7 @@ class ServiceOverviewController extends Controller
 
         return response()->json(['data' => [
             'total' => array_sum($summary),
-            'today' => $this->todayCount($request),
+            'today' => $todayTotal,
             'groups' => $summary,
             'recent' => array_slice($recent, 0, 10),
             'period' => [
@@ -134,18 +145,6 @@ class ServiceOverviewController extends Controller
             'module_summary' => $modules,
             'trend' => $trend,
         ]]);
-    }
-
-    private function todayCount(Request $request): int
-    {
-        $count = 0;
-        foreach (ServiceCatalog::ACTIVITIES as $module => $definition) {
-            if ($request->user()->can($module.'.view')) {
-                $count += DB::table($definition['table'])->whereNull('deleted_at')->whereDate('service_date', now('Asia/Bangkok')->toDateString())->count();
-            }
-        }
-
-        return $count;
     }
 
     public function report(Request $request, ServiceReports $reports): JsonResponse

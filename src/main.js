@@ -439,9 +439,11 @@ function bindGlobalEvents() {
       const form = e.target;
       const params = new URLSearchParams();
       new FormData(form).forEach((value, key) => {
-        if (value && !(key === 'sort' && value === 'newest')) params.set(key, value);
+        const cleanValue = String(value).trim();
+        if (cleanValue && !(key === 'sort' && cleanValue === 'newest')) params.set(key, cleanValue);
       });
-      navigate(`/module/${form.dataset.module}${params.size ? `?${params}` : ''}`);
+      const target = `#/module/${form.dataset.module}${params.size ? `?${params}` : ''}`;
+      if (target !== route().hash) navigate(target);
       return;
     }
     if (e.target.id === 'zone-filter') {

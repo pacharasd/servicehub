@@ -52,6 +52,9 @@ test('activity list requests only its module page and uses server totals', async
   assert.equal(request.searchParams.get('sort'), 'oldest');
   assert.match(html, /พบ 13 รายการ/);
   assert.match(html, /2 \/ 3/);
+  assert.match(html, /<button type="submit"[^>]*>ค้นหา<\/button>/);
+  assert.match(html, /พิมพ์คำค้นหาแล้วกด Enter/);
+  assert.doesNotMatch(html, /data-action="live-filter"/);
 });
 
 test('a referenced module loads only its own records and reference choices', async () => {
@@ -203,5 +206,4 @@ test('formPage defaults service_date to today for new records and preserves exis
   });
   assert.match(editHtml, /name="service_date"[^>]*value="2026-09-15"/);
 });
-
 

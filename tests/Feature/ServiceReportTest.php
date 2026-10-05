@@ -51,6 +51,21 @@ class ServiceReportTest extends TestCase
             ->assertJsonPath('meta.comparison.to', '2026-08-31');
     }
 
+    public function test_summary_uses_at_most_three_queries_per_module(): void
+    {
+        $this->signIn();
+        $queries = [];
+        DB::listen(function ($event) use (&$queries): void {
+            if (str_contains($event->sql, 'road_washings')) {
+                $queries[] = $event->sql;
+            }
+        });
+
+        $this->getJson('/api/reports')->assertOk();
+
+        $this->assertLessThanOrEqual(3, count($queries));
+    }
+
     public function test_counts_metrics_latest_stock_breakdown_trend_and_deleted_records(): void
     {
         $this->signIn();

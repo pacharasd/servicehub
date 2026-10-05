@@ -223,7 +223,7 @@ export function listPage({ module, group, params, records = activityRecords, ref
           <label for="search" class="mb-1.5 block text-xs font-bold text-[#52665d]">ค้นหา</label>
           <div class="relative">
             ${icon('search', 18, 'pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9daf9f]')}
-            <input id="search" name="q" class="field pl-10" type="search" placeholder="พิมพ์ค้นหาทันที..." value="${esc(query)}" data-action="live-filter" autocomplete="off">
+            <input id="search" name="q" class="field pl-10" type="search" placeholder="พิมพ์คำค้นหาแล้วกด Enter..." value="${esc(query)}" autocomplete="off">
           </div>
         </div>
         <button type="button" data-action="toggle-mobile-filters" data-module="${module.id}" aria-expanded="${filtersOpen}" aria-controls="advanced-filters-${module.id}" class="inline-flex min-h-11 w-full items-center justify-between rounded-xl border border-line px-4 text-sm font-semibold text-primary-dark md:hidden">
@@ -232,16 +232,16 @@ export function listPage({ module, group, params, records = activityRecords, ref
         <div id="advanced-filters-${module.id}" class="${filtersOpen ? 'flex' : 'hidden'} w-full flex-wrap items-end gap-3 md:contents">
           <div class="w-full min-w-0 sm:w-[150px]">
             <label for="date-from" class="mb-1.5 block text-xs font-bold text-[#52665d]">ตั้งแต่วันที่</label>
-            <input id="date-from" class="field" type="date" name="from" value="${esc(from)}" data-action="live-filter">
+            <input id="date-from" class="field" type="date" name="from" value="${esc(from)}">
           </div>
           <div class="w-full min-w-0 sm:w-[150px]">
             <label for="date-to" class="mb-1.5 block text-xs font-bold text-[#52665d]">ถึงวันที่</label>
-            <input id="date-to" class="field" type="date" name="to" value="${esc(to)}" data-action="live-filter">
+            <input id="date-to" class="field" type="date" name="to" value="${esc(to)}">
           </div>
           ${selectFilters}
           <div class="w-full min-w-0 sm:w-[150px]">
             <label for="sort" class="mb-1.5 block text-xs font-bold text-[#52665d]">เรียงตาม</label>
-            <select id="sort" name="sort" class="field" data-action="live-filter">
+            <select id="sort" name="sort" class="field">
               <option value="newest" ${sort === 'newest' ? 'selected' : ''}>วันที่ล่าสุด</option>
               <option value="oldest" ${sort === 'oldest' ? 'selected' : ''}>วันที่เก่าสุด</option>
             </select>
@@ -250,6 +250,7 @@ export function listPage({ module, group, params, records = activityRecords, ref
             <a href="#/module/${module.id}" data-action="clear-filters" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-line px-4 text-xs font-semibold text-muted hover:bg-canvas sm:w-auto">ล้างตัวกรอง</a>
           </div>
         </div>
+        <button type="submit" class="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-primary px-5 text-sm font-bold text-white hover:bg-primary-dark sm:w-auto">ค้นหา</button>
       </form>
     </section>
 

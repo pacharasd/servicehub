@@ -86,15 +86,15 @@ class ServiceReports
         $table = $definition['table'];
         $current = $this->query($table, $period['from'], $period['to']);
         $previous = $this->query($table, $period['comparison_from'], $period['comparison_to']);
-        $count = (clone $current)->count();
-        $previousCount = (clone $previous)->count();
         $sumColumns = [];
         foreach ($definition['fields'] as $column => $kind) {
             if (in_array($kind, ['decimal', 'integer'], true) && $column !== 'fertilizer_remaining') {
                 $sumColumns[] = "COALESCE(SUM({$column}), 0) as `sum_{$column}`";
             }
         }
-        $currentAgg = $sumColumns ? (clone $current)->selectRaw(implode(', ', $sumColumns))->first() : null;
+        $currentAgg = (clone $current)->selectRaw('COUNT(*) as total_count'.($sumColumns ? ', '.implode(', ', $sumColumns) : ''))->first();
+        $count = (int) $currentAgg->total_count;
+        $previousCount = (clone $previous)->count();
 
         $quantities = [];
         foreach ($definition['fields'] as $column => $kind) {
