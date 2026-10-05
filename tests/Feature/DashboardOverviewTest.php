@@ -33,19 +33,44 @@ class DashboardOverviewTest extends TestCase
         ]);
     }
 
-    public function test_default_period_is_current_bangkok_month_and_empty_data_is_explicit(): void
+    public function test_default_dashboard_is_all_time_and_empty_data_is_explicit(): void
     {
         $this->travelTo(now('Asia/Bangkok')->setDate(2026, 10, 15)->setTime(12, 0));
         $this->signIn();
 
         $this->getJson('/api/dashboard')->assertOk()
-            ->assertJsonPath('data.period.from', '2026-10-01')
-            ->assertJsonPath('data.period.to', '2026-10-31')
+            ->assertJsonPath('data.period.from', null)
+            ->assertJsonPath('data.period.to', null)
             ->assertJsonPath('data.period.total', 0)
             ->assertJsonPath('data.total', 0)
             ->assertJsonPath('data.module_summary.road-washings.count', 0)
             ->assertJsonCount(9, 'data.module_summary')
             ->assertJsonCount(0, 'data.recent');
+    }
+
+    public function test_default_dashboard_aggregates_across_all_months_when_no_filter_provided(): void
+    {
+        $this->signIn();
+        $zone = DB::table('cleaning_zones')->value('id');
+        $this->add('road_washings', ['cleaning_zone_id' => $zone, 'location' => 'งานกันยายน', 'distance_km' => 5], '2026-09-20');
+        $this->add('road_washings', ['cleaning_zone_id' => $zone, 'location' => 'งานตุลาคม', 'distance_km' => 10], '2026-10-05');
+
+        // All Time default
+        $allTime = $this->getJson('/api/dashboard')->assertOk()->json('data');
+        $this->assertNull($allTime['period']['from']);
+        $this->assertNull($allTime['period']['to']);
+        $this->assertSame(2, $allTime['period']['total']);
+        $this->assertSame(2, $allTime['module_summary']['road-washings']['count']);
+        $this->assertEquals(15.0, $allTime['module_summary']['road-washings']['metrics']['distance_km']);
+
+        // Explicit month filter
+        $octOnly = $this->getJson('/api/dashboard?from=2026-10-01&to=2026-10-31')->assertOk()->json('data');
+        $this->assertSame('2026-10-01', $octOnly['period']['from']);
+        $this->assertSame('2026-10-31', $octOnly['period']['to']);
+        $this->assertSame(1, $octOnly['period']['total']);
+        $this->assertSame(2, $octOnly['total']);
+        $this->assertSame(1, $octOnly['module_summary']['road-washings']['count']);
+        $this->assertEquals(10.0, $octOnly['module_summary']['road-washings']['metrics']['distance_km']);
     }
 
     public function test_period_counts_units_latest_balance_soft_deletes_and_recent_creation_order(): void

@@ -66,8 +66,8 @@ async function loadDashboard(ctx = null) {
 
   try {
     const query = new URLSearchParams();
-    if (params.has('from')) query.set('from', params.get('from'));
-    if (params.has('to')) query.set('to', params.get('to'));
+    if (params.get('from')) query.set('from', params.get('from'));
+    if (params.get('to')) query.set('to', params.get('to'));
     const url = (window.serviceHubUrls?.apiDashboard || '/api/dashboard') + (query.size ? `?${query}` : '');
     const result = await apiRequest(url);
     if (requestId !== overviewRequest || !isCurrent()) return;
@@ -394,6 +394,11 @@ function bindGlobalEvents() {
       const from = form.elements.from.value;
       const to = form.elements.to.value;
       const error = form.parentElement.querySelector('#dashboard-filter-error');
+      if (!from && !to) {
+        if (error) error.classList.add('hidden');
+        navigate('/dashboard');
+        return;
+      }
       if (!from || !to || from > to) {
         if (error) {
           error.textContent = !from || !to ? 'กรุณาระบุวันที่เริ่มต้นและสิ้นสุด' : 'วันสิ้นสุดต้องไม่ก่อนวันเริ่มต้น';

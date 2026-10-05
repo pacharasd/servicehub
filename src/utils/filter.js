@@ -27,6 +27,8 @@ export function getQuickDateRange(preset) {
   const today = formatDateYmd(now);
 
   switch (preset) {
+    case 'all':
+      return { from: '', to: '' };
     case 'today':
       return { from: today, to: today };
     case '7d': {
@@ -52,6 +54,7 @@ export function getQuickDateRange(preset) {
  * รายการ Presets ช่วงเวลาด่วน
  */
 export const DATE_PRESETS = [
+  { id: 'all', label: 'ทั้งหมด' },
   { id: 'today', label: 'วันนี้' },
   { id: '7d', label: '7 วันล่าสุด' },
   { id: 'month', label: 'เดือนนี้' },
@@ -69,7 +72,9 @@ export function renderDatePresets({ from = '', to = '', formId = '', cls = '' } 
       <span class="text-xs font-semibold text-muted mr-1">ช่วงด่วน:</span>
       ${DATE_PRESETS.map((p) => {
         const range = getQuickDateRange(p.id);
-        const isActive = from === range.from && to === range.to;
+        const isActive = p.id === 'all'
+          ? (!from && !to)
+          : (Boolean(from) && from === range.from && to === range.to);
         return `
           <button
             type="button"

@@ -21,13 +21,13 @@ class ServiceOverviewController extends Controller
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d'],
         ]);
-        $today = CarbonImmutable::now('Asia/Bangkok');
-        $from = $filters['from'] ?? $today->startOfMonth()->toDateString();
-        $to = $filters['to'] ?? $today->endOfMonth()->toDateString();
-        if ($from > $to) {
+        $from = $filters['from'] ?? null;
+        $to = $filters['to'] ?? null;
+        if ($from && $to && $from > $to) {
             throw ValidationException::withMessages(['to' => 'วันสิ้นสุดต้องไม่ก่อนวันเริ่มต้น']);
         }
 
+        $today = CarbonImmutable::now('Asia/Bangkok');
         $summary = [];
         $modules = [];
         $groups = [];
@@ -40,7 +40,16 @@ class ServiceOverviewController extends Controller
             $table = $definition['table'];
             $query = DB::table($table)->whereNull('deleted_at');
             $summary[$module] = (clone $query)->count();
-            $periodQuery = (clone $query)->whereBetween('service_date', [$from, $to]);
+
+            $periodQuery = clone $query;
+            if ($from && $to) {
+                $periodQuery->whereBetween('service_date', [$from, $to]);
+            } elseif ($from) {
+                $periodQuery->whereDate('service_date', '>=', $from);
+            } elseif ($to) {
+                $periodQuery->whereDate('service_date', '<=', $to);
+            }
+
             $sumColumns = [];
             $metricFields = [];
             foreach ($definition['fields'] as $column => $kind) {
@@ -85,8 +94,19 @@ class ServiceOverviewController extends Controller
         }
         usort($recent, fn ($a, $b) => [($b['created_at'] ?? ''), $b['id']] <=> [($a['created_at'] ?? ''), $a['id']]);
 
-        $start = CarbonImmutable::parse($from, 'Asia/Bangkok');
-        $end = CarbonImmutable::parse($to, 'Asia/Bangkok');
+        if ($from && $to) {
+            $start = CarbonImmutable::parse($from, 'Asia/Bangkok');
+            $end = CarbonImmutable::parse($to, 'Asia/Bangkok');
+        } elseif ($from) {
+            $start = CarbonImmutable::parse($from, 'Asia/Bangkok');
+            $end = $today->endOfMonth();
+        } elseif ($to) {
+            $end = CarbonImmutable::parse($to, 'Asia/Bangkok');
+            $start = $end->subMonths(5)->startOfMonth();
+        } else {
+            $end = $today->endOfMonth();
+            $start = $today->subMonths(5)->startOfMonth();
+        }
         $monthly = $start->diffInDays($end) > 62;
         $trend = [];
         for ($cursor = $start; $cursor->lte($end); $cursor = $monthly ? $cursor->startOfMonth()->addMonth() : $cursor->addWeek()) {
@@ -105,7 +125,11 @@ class ServiceOverviewController extends Controller
             'today' => $this->todayCount($request),
             'groups' => $summary,
             'recent' => array_slice($recent, 0, 10),
-            'period' => ['from' => $from, 'to' => $to, 'total' => array_sum(array_column($modules, 'count'))],
+            'period' => [
+                'from' => $from,
+                'to' => $to,
+                'total' => array_sum(array_column($modules, 'count')),
+            ],
             'group_summary' => $groups,
             'module_summary' => $modules,
             'trend' => $trend,
