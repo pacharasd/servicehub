@@ -181,6 +181,36 @@ export function listPage({ module, group, params, records = activityRecords, ref
   if (activeAdvancedFilters) expandedFilters.add(module.id);
   const filtersOpen = expandedFilters.has(module.id);
 
+  const activeFilterLabels = [];
+  if (from && to) activeFilterLabels.push(`ช่วงวันที่ ${thaiDate(from)} – ${thaiDate(to)}`);
+  else if (from) activeFilterLabels.push(`ตั้งแต่วันที่ ${thaiDate(from)}`);
+  else if (to) activeFilterLabels.push(`ถึงวันที่ ${thaiDate(to)}`);
+  if (query) activeFilterLabels.push(`ค้นหา "${query}"`);
+  module.fields.filter((f) => f.type === 'reference').forEach((f) => {
+    const val = params.get(f.name);
+    if (val) {
+      const refItem = references[f.reference]?.find((item) => String(item.id) === String(val));
+      if (refItem) activeFilterLabels.push(`${f.label}: ${refItem.name}`);
+    }
+  });
+  const hasActiveFilters = activeFilterLabels.length > 0;
+
+  const filterBanner = hasActiveFilters ? `
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#cfe5d6] bg-[#f0f8f3] px-4 py-3 text-xs sm:text-sm text-[#2b4c3c]" role="region" aria-label="สถานะตัวกรองข้อมูล">
+      <div class="flex items-center gap-2">
+        ${icon('filter', 16, 'shrink-0 text-primary')}
+        <div>
+          <span class="font-bold">กำลังกรองข้อมูล:</span>
+          <span class="text-[#3c594b]">${esc(activeFilterLabels.join(' · '))}</span>
+          <span class="ml-1 text-xs text-muted font-normal">(${total > 0 ? `พบ ${number(total)} รายการ` : 'ไม่พบรายการ'})</span>
+        </div>
+      </div>
+      <a href="#/module/${module.id}" data-action="clear-filters" class="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-[#b2dac0] bg-white px-3.5 py-1.5 text-xs font-bold text-primary shadow-xs hover:bg-[#ebf5ee]">
+        ${icon('close', 14)}แสดงข้อมูลทั้งหมดทุกช่วงเวลา
+      </a>
+    </div>
+  ` : '';
+
   return `
     ${pageHeading(group?.label || '', module.label, `จัดการข้อมูล${module.short} ค้นหาและกรองรายการตามช่วงวันที่`, can(`${module.id}.create`) ? primaryButton('เพิ่มข้อมูล', `#/module/${module.id}/new`) : '')}
     <section aria-label="ตัวกรองรายการ" class="panel-shadow mb-5 w-full max-w-full min-w-0 rounded-2xl border border-line bg-white p-4 sm:p-5">
@@ -222,6 +252,8 @@ export function listPage({ module, group, params, records = activityRecords, ref
         </div>
       </form>
     </section>
+
+    ${filterBanner}
 
     <section aria-labelledby="records-title" class="panel-shadow overflow-hidden w-full max-w-full min-w-0 rounded-2xl border border-line bg-white">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3.5 sm:px-6 sm:py-4">
@@ -266,11 +298,26 @@ export function listPage({ module, group, params, records = activityRecords, ref
           <a href="${buildPage(Math.min(pages, safePage + 1))}" class="inline-flex min-h-11 items-center rounded-lg border border-line px-3 py-1.5 ${safePage === pages ? 'pointer-events-none opacity-45' : 'hover:bg-canvas'}" ${safePage === pages ? 'aria-disabled="true" tabindex="-1"' : ''}>ถัดไป</a>
         </div>
       </div>` : `
-      <div class="flex flex-col items-center px-6 py-16 text-center">
-        <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f1f7f2] text-primary">${icon('empty', 27)}</div>
-        <h3 class="text-base font-bold">ไม่พบรายการข้อมูล</h3>
-        <p class="mt-1 max-w-sm text-sm leading-relaxed text-muted">${query || from || to ? 'ลองเปลี่ยนคำค้นหาหรือช่วงวันที่ แล้วค้นหาอีกครั้ง' : 'เริ่มต้นด้วยการเพิ่มรายการข้อมูลในหมวดนี้'}</p>
-        <div class="mt-5">${query || from || to ? outlinedButton('ล้างตัวกรอง', `#/module/${module.id}`) : primaryButton('เพิ่มข้อมูล', `#/module/${module.id}/new`)}</div>
+      <div class="flex flex-col items-center px-6 py-14 text-center">
+        <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl ${hasActiveFilters ? 'bg-[#fef5e7] text-[#c2782b]' : 'bg-[#f1f7f2] text-primary'}">${icon('empty', 27)}</div>
+        <h3 class="text-base font-bold text-ink">${hasActiveFilters ? 'ไม่พบรายการข้อมูลตามเงื่อนไขที่เลือก' : 'ยังไม่มีข้อมูลในหมวดนี้'}</h3>
+        <p class="mt-2 max-w-md text-sm leading-relaxed text-muted">
+          ${hasActiveFilters
+            ? `ไม่มีการบันทึกงานบริการ${esc(module.short)}${from && to ? ` ระหว่างวันที่ ${thaiDate(from)} ถึง ${thaiDate(to)}` : ''} คุณสามารถคลิกปุ่มด้านล่างเพื่อดูข้อมูลทั้งหมดในอดีต หรือเลือกช่วงเวลาอื่น`
+            : `เริ่มต้นด้วยการเพิ่มรายการข้อมูลการดำเนินงานในหมวด${esc(module.short)}`}
+        </p>
+        <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+          ${hasActiveFilters ? `
+            <a href="#/module/${module.id}" data-action="clear-filters" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-bold text-white shadow-sm hover:bg-primary-dark">
+              ${icon('grid', 16)}แสดงข้อมูลทั้งหมดทุกช่วงเวลา
+            </a>
+          ` : ''}
+          ${can(`${module.id}.create`) ? `
+            <a href="#/module/${module.id}/new" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl ${hasActiveFilters ? 'border border-line bg-white text-ink hover:bg-canvas' : 'bg-primary text-white hover:bg-primary-dark'} px-5 text-sm font-bold">
+              ${icon('plus', 16)}เพิ่มข้อมูลใหม่
+            </a>
+          ` : ''}
+        </div>
       </div>`}
     </section>
   `;
@@ -325,7 +372,14 @@ export function detailPage({ module, group, record, references = activityReferen
 
 export function formPage({ module, group, record = null, errors = {}, values = null, references = activityReferences }) {
   const editing = Boolean(record);
-  const data = values || formDraft || record || {};
+  const data = { ...(values || formDraft || record || {}) };
+  if (!editing && !data.service_date) {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    data.service_date = `${y}-${m}-${d}`;
+  }
   const title = `${editing ? 'แก้ไข' : 'เพิ่ม'}ข้อมูล${module.short}`;
 
   return `

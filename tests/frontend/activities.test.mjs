@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { apiRequest } from '../../src/api.js';
-import { invalidateActivityReference, renderActivitiesView } from '../../src/views/activities.js';
+import { invalidateActivityReference, renderActivitiesView, formPage } from '../../src/views/activities.js';
+import { modules } from '../../src/data.js';
 
 function setEnvironment(fetchResponse) {
   const requests = [];
@@ -122,4 +123,85 @@ test('fast route switching discards stale activity responses without rendering',
   const result = await pendingWaterway;
   assert.equal(result, null);
 });
+
+test('activity list renders active filter banner and contextual empty state when no records match filter', async () => {
+  setEnvironment(() => jsonResponse({
+    data: [],
+    meta: { total: 0, current_page: 1, last_page: 1 },
+  }));
+
+  const html = await renderActivitiesView({
+    parts: ['module', 'road-washings'],
+    params: new URLSearchParams('from=2026-10-01&to=2026-10-31'),
+    isCurrent: () => true,
+  });
+
+  assert.match(html, /กำลังกรองข้อมูล:/);
+  assert.match(html, /ช่วงวันที่ 1 ต\.ค\. 2569 – 31 ต\.ค\. 2569/);
+  assert.match(html, /ไม่พบรายการ/);
+  assert.match(html, /href="#\/module\/road-washings"/);
+  assert.match(html, /แสดงข้อมูลทั้งหมดทุกช่วงเวลา/);
+  assert.match(html, /ไม่พบรายการข้อมูลตามเงื่อนไขที่เลือก/);
+  assert.match(html, /ไม่มีการบันทึกงานบริการการล้างทำความสะอาดถนน/);
+});
+
+test('activity list renders active filter banner with count when filtered records exist', async () => {
+  setEnvironment(() => jsonResponse({
+    data: [{ id: '1', module: 'road-washings', service_date: '2026-10-02', location: 'สุเหร่าวัดปากน้ำ' }],
+    meta: { total: 1, current_page: 1, last_page: 1 },
+  }));
+
+  const html = await renderActivitiesView({
+    parts: ['module', 'road-washings'],
+    params: new URLSearchParams('from=2026-10-01&to=2026-10-31&q=%E0%B8%AA%E0%B8%B8%E0%B9%87%E0%B8%AB%E0%B8%A3%E0%B9%88%E0%B8%B2'),
+    isCurrent: () => true,
+  });
+
+  assert.match(html, /กำลังกรองข้อมูล:/);
+  assert.match(html, /พบ 1 รายการ/);
+  assert.match(html, /แสดงข้อมูลทั้งหมดทุกช่วงเวลา/);
+});
+
+test('activity list renders standard empty state without filter banner when no filters are active', async () => {
+  setEnvironment(() => jsonResponse({
+    data: [],
+    meta: { total: 0, current_page: 1, last_page: 1 },
+  }));
+
+  const html = await renderActivitiesView({
+    parts: ['module', 'road-washings'],
+    params: new URLSearchParams(),
+    isCurrent: () => true,
+  });
+
+  assert.doesNotMatch(html, /กำลังกรองข้อมูล:/);
+  assert.match(html, /ยังไม่มีข้อมูลในหมวดนี้/);
+  assert.match(html, /เพิ่มข้อมูลใหม่/);
+});
+
+test('formPage defaults service_date to today for new records and preserves existing record service_date', () => {
+  setEnvironment(() => jsonResponse({ data: [] }));
+
+  const now = new Date();
+  const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+  const roadModule = modules.find((m) => m.id === 'road-washings');
+
+  // New record
+  const newHtml = formPage({
+    module: roadModule,
+    group: { label: 'งานบริการ' },
+    record: null,
+  });
+  assert.match(newHtml, new RegExp(`name="service_date"[^>]*value="${todayIso}"`));
+
+  // Edit existing record
+  const editHtml = formPage({
+    module: roadModule,
+    group: { label: 'งานบริการ' },
+    record: { id: '99', service_date: '2026-09-15' },
+  });
+  assert.match(editHtml, /name="service_date"[^>]*value="2026-09-15"/);
+});
+
 
