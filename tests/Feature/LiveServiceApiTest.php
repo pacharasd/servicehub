@@ -7,6 +7,7 @@ use App\Support\ServiceCatalog;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class LiveServiceApiTest extends TestCase
@@ -163,5 +164,20 @@ class LiveServiceApiTest extends TestCase
             $this->get('/api/activities/'.$module.'/export')->assertForbidden();
         }
         $this->getJson('/api/audit-logs')->assertForbidden();
+    }
+
+    public function test_super_admin_bypasses_module_authorization_via_gate_before(): void
+    {
+        $superAdmin = User::factory()->create();
+        Role::findOrCreate('super-admin', 'web');
+        $superAdmin->assignRole('super-admin');
+
+        $this->withSession(['auth_version' => $superAdmin->auth_version ?? 0])->actingAs($superAdmin, 'web');
+        $this->getJson('/api/activities/road-washings')->assertOk();
+    }
+
+    public function test_servicehub_permissions_sync_command_runs_successfully(): void
+    {
+        $this->artisan('servicehub:permissions:sync')->assertSuccessful();
     }
 }

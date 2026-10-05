@@ -9,6 +9,7 @@ use Illuminate\Auth\Events\Logout;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -27,6 +28,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Gate::before(function ($user, string $ability) {
+            if ($ability === 'delete') {
+                return null;
+            }
+
+            return $user->hasRole('super-admin') ? true : null;
+        });
+
         RateLimiter::for('api', function (Request $request) {
             $user = $request->user() ?? (auth()->guard('web')->check() ? auth()->guard('web')->user() : null);
             $key = $user?->id ?: $request->ip();

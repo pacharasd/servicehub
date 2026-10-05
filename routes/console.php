@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -80,3 +81,10 @@ Artisan::command('servicehub:admin:recover {username}', function () {
 
     return 0;
 })->purpose('Reset an administrator password with local console access');
+
+Artisan::command('servicehub:permissions:sync', function () {
+    (new ReferenceDataSeeder)->run();
+    $this->info('All system permissions, roles, reference data, and caches have been synced successfully.');
+
+    return 0;
+})->purpose('Synchronize all system permissions, roles, and reference catalogs');
