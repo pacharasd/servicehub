@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureActiveAccount;
 use App\Http\Middleware\SecurityHeaders;
+use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Auth\Middleware\Authorize;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Contracts\Session\Middleware\AuthenticatesSessions;
@@ -40,7 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
             ThrottleRequests::class,
             ThrottleRequestsWithRedis::class,
             AuthenticatesRequests::class,
-            \Illuminate\Auth\Middleware\Authenticate::class,
+            Authenticate::class,
             AuthenticatesSessions::class,
             SubstituteBindings::class,
             Authorize::class,

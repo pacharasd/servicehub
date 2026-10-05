@@ -187,11 +187,16 @@ export async function apiRequest(url, options = {}) {
   // 3. ตรวจสอบข้อผิดพลาด HTTP สถานะอื่นๆ
   if (!response.ok) {
     let errorMsg = payload.message;
+    let retryAfterSeconds = 0;
 
     if (response.status === 429) {
       const retryAfter = response.headers?.get?.('Retry-After');
-      errorMsg = retryAfter
-        ? `คำขอส่งมาถี่เกินไป กรุณารอ ${retryAfter} วินาทีแล้วลองใหม่อีกครั้ง`
+      const parsedSeconds = Number(retryAfter);
+      retryAfterSeconds = Number.isFinite(parsedSeconds) && parsedSeconds > 0
+        ? Math.ceil(parsedSeconds)
+        : Math.max(0, Math.ceil((Date.parse(retryAfter || '') - Date.now()) / 1000) || 0);
+      errorMsg = retryAfterSeconds
+        ? `คำขอส่งมาถี่เกินไป กรุณารอ ${retryAfterSeconds} วินาทีแล้วลองใหม่อีกครั้ง`
         : 'คำขอส่งมาถี่เกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง (Too Many Attempts)';
     } else if (response.status === 403) {
       errorMsg = errorMsg || 'คุณไม่มีสิทธิ์ดำเนินการในส่วนนี้';
@@ -203,6 +208,7 @@ export async function apiRequest(url, options = {}) {
 
     const err = new ApiError(errorMsg, response.status, payload);
     err.fields = payload.errors || {};
+    err.retryAfterSeconds = retryAfterSeconds;
     throw err;
   }
 

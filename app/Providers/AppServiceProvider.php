@@ -30,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             $user = $request->user() ?? (auth()->guard('web')->check() ? auth()->guard('web')->user() : null);
             $key = $user?->id ?: $request->ip();
+
             return Limit::perMinute(60)->by($key);
         });
 

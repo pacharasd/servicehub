@@ -69,6 +69,54 @@ class LiveServiceApiTest extends TestCase
         $this->postJson('/api/activities/road-washings', $roadBody)->assertUnprocessable()->assertJsonValidationErrors('cleaning_zone_id');
     }
 
+    public function test_activity_list_filters_and_paginates_on_the_server(): void
+    {
+        $user = $this->administrator();
+        $this->withSession(['auth_version' => $user->auth_version ?? 0])->actingAs($user, 'web');
+        $zone = $this->reference('cleaning_zones');
+
+        for ($index = 1; $index <= 8; $index++) {
+            $this->postJson('/api/activities/road-washings', [
+                'service_date' => '2026-10-'.str_pad((string) $index, 2, '0', STR_PAD_LEFT),
+                'cleaning_zone_id' => $zone,
+                'location' => 'ถนนทดสอบ '.$index,
+                'distance_km' => 1,
+            ])->assertCreated();
+        }
+
+        $this->getJson('/api/activities/road-washings?per_page=6&page=2')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 8)
+            ->assertJsonPath('meta.current_page', 2)
+            ->assertJsonCount(2, 'data');
+        $this->getJson('/api/activities/road-washings?per_page=6&q=ถนนทดสอบ%208')
+            ->assertOk()
+            ->assertJsonPath('meta.total', 1)
+            ->assertJsonCount(1, 'data');
+    }
+
+    public function test_reference_usage_counts_exclude_soft_deleted_work_but_preserve_delete_protection(): void
+    {
+        $user = $this->administrator();
+        $this->withSession(['auth_version' => $user->auth_version ?? 0])->actingAs($user, 'web');
+        $zone = $this->reference('cleaning_zones');
+        $wasteType = $this->reference('waste_types');
+
+        foreach ([
+            ['cleaning-zones', $zone, 'road-washings', ['cleaning_zone_id' => $zone, 'location' => 'ถนนทดสอบ', 'distance_km' => 1]],
+            ['waste-types', $wasteType, 'waste-collections', ['source' => 'จุดเก็บ', 'waste_type_id' => $wasteType, 'waste_name' => 'ขยะทดสอบ', 'weight' => 1]],
+        ] as [$type, $referenceId, $module, $fields]) {
+            $id = $this->postJson('/api/activities/'.$module, ['service_date' => '2026-10-05', ...$fields])
+                ->assertCreated()->json('data.id');
+            $this->getJson('/api/references/'.$type.'/'.$referenceId)
+                ->assertOk()->assertJsonPath('data.usage_count', 1)->assertJsonPath('data.referenced_count', 1);
+            $this->deleteJson('/api/activities/'.$module.'/'.$id)->assertOk();
+            $this->getJson('/api/references/'.$type.'/'.$referenceId)
+                ->assertOk()->assertJsonPath('data.usage_count', 0)->assertJsonPath('data.referenced_count', 1);
+            $this->deleteJson('/api/references/'.$type.'/'.$referenceId)->assertStatus(409);
+        }
+    }
+
     public function test_two_reference_catalogs_support_create_update_search_and_delete(): void
     {
         $user = $this->administrator();

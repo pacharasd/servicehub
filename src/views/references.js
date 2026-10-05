@@ -10,31 +10,29 @@ import { pageHeading, primaryButton, outlinedButton } from '../utils/layout.js';
 import { showConfirmModal } from '../components/confirmModal.js';
 import { showToast } from '../components/toast.js';
 import { navigate } from '../router.js';
-import { getActivityRecords, refreshActivityData } from './activities.js';
+import { invalidateActivityReference } from './activities.js';
 
 let zonesData = [];
 let wasteTypesData = [];
-let isRefLoaded = false;
+const loadedReferences = new Set();
 
-export async function refreshReferenceData() {
-  const [zones, wastes] = await Promise.all([
-    can('cleaning-zones.view') ? allPages(apiReferenceUrl('cleaning-zones')) : Promise.resolve([]),
-    can('waste-types.view') ? allPages(apiReferenceUrl('waste-types')) : Promise.resolve([]),
-  ]);
-  zonesData = zones || [];
-  wasteTypesData = wastes || [];
-  isRefLoaded = true;
+export async function refreshReferenceData(type) {
+  if (!can(`${type}.view`)) return;
+  const records = await allPages(apiReferenceUrl(type));
+  if (type === 'cleaning-zones') zonesData = records;
+  if (type === 'waste-types') wasteTypesData = records;
+  loadedReferences.add(type);
 }
 
-export function zoneUsage(name, records = getActivityRecords()) {
-  return records.filter((r) => r.module === 'road-washings' && r.cleaning_zone === name).length;
+export function zoneUsage(zone) {
+  return Number(zone.usage_count) || 0;
 }
 
-export function wasteTypeUsage(name, records = getActivityRecords()) {
-  return records.filter((r) => r.module === 'waste-collections' && r.waste_type === name).length;
+export function wasteTypeUsage(wasteType) {
+  return Number(wasteType.usage_count) || 0;
 }
 
-export function zoneListPage({ params, zones = zonesData, records = getActivityRecords() }) {
+export function zoneListPage({ params, zones = zonesData }) {
   const query = (params.get('q') || '').trim().toLocaleLowerCase('th-TH');
   const sort = params.get('sort') === 'name' ? 'name' : 'code';
   const status = params.get('status') || 'all';
@@ -96,7 +94,7 @@ export function zoneListPage({ params, zones = zonesData, records = getActivityR
           <a class="flex min-w-0 items-center gap-3 px-4 py-4 hover:bg-[#f8fbf8] sm:px-6" href="#/cleaning-zones/${encodeURIComponent(z.id)}">
             <span class="shrink-0 rounded-lg bg-[#e9f5ef] px-2.5 py-1 text-xs font-bold text-primary-dark">${esc(z.code)}</span>
             <span class="min-w-0 flex-1 break-words text-sm font-semibold">${esc(z.name)}</span>
-            <span class="hidden text-xs text-muted sm:inline">ใช้ในงานล้างถนน ${number(zoneUsage(z.name, records))} รายการ</span>
+            <span class="hidden text-xs text-muted sm:inline">ใช้ในงานล้างถนน ${number(zoneUsage(z))} รายการ</span>
             ${icon('chevron', 16, 'shrink-0 text-muted')}
           </a>
         `).join('')}
@@ -119,13 +117,14 @@ export function zoneListPage({ params, zones = zonesData, records = getActivityR
   `;
 }
 
-export function zoneDetailPage({ zone, records = getActivityRecords() }) {
-  const usage = zoneUsage(zone.name, records);
+export function zoneDetailPage({ zone }) {
+  const usage = zoneUsage(zone);
+  const referenced = Number(zone.referenced_count) || 0;
   return `
     ${pageHeading('ข้อมูลพื้นฐาน', zone.name, 'รายละเอียดเขตรักษาความสะอาด', `
       <div class="flex flex-wrap gap-2">
         ${outlinedButton('แก้ไข', `#/cleaning-zones/${encodeURIComponent(zone.id)}/edit`, 'edit')}
-        <button type="button" class="min-h-11 rounded-xl border border-[#eed8d5] px-4 text-sm font-bold text-[#b45148] hover:bg-[#fff7f6]" data-action="delete-reference" data-type="cleaning-zones" data-id="${esc(zone.id)}" data-name="${esc(zone.name)}" data-usage="${usage}">
+        <button type="button" class="min-h-11 rounded-xl border border-[#eed8d5] px-4 text-sm font-bold text-[#b45148] hover:bg-[#fff7f6]" data-action="delete-reference" data-type="cleaning-zones" data-id="${esc(zone.id)}" data-name="${esc(zone.name)}" data-usage="${referenced}">
           ${icon('trash', 17)} ลบเขต
         </button>
       </div>
@@ -146,7 +145,7 @@ export function zoneDetailPage({ zone, records = getActivityRecords() }) {
           <dd class="mt-1 font-bold">${number(usage)} รายการ</dd>
         </div>
       </dl>
-      ${usage ? `<p class="mt-6 rounded-xl border border-[#d7eadd] bg-[#f0f8f2] p-4 text-sm text-primary-dark">เขตนี้ถูกใช้ในรายการล้างถนน ต้องเปลี่ยนเขตในรายการเหล่านั้นก่อนจึงจะลบได้</p>` : ''}
+      ${referenced ? `<p class="mt-6 rounded-xl border border-[#d7eadd] bg-[#f0f8f2] p-4 text-sm text-primary-dark">เขตนี้ยังมีรายการล้างถนนอ้างอิงอยู่ รวมถึงรายการที่ลบออกจากหน้าจอ จึงไม่สามารถลบเขตได้</p>` : ''}
     </section>
   `;
 }
@@ -185,7 +184,7 @@ export function zoneFormPage(zone = null, errors = {}, values = zone || {}) {
   `;
 }
 
-export function wasteTypeListPage({ params, wasteTypes = wasteTypesData, records = getActivityRecords() }) {
+export function wasteTypeListPage({ params, wasteTypes = wasteTypesData }) {
   const query = (params.get('q') || '').trim().toLocaleLowerCase('th-TH');
   const sort = params.get('sort') === 'name' ? 'name' : 'code';
   const status = params.get('status') || 'all';
@@ -247,7 +246,7 @@ export function wasteTypeListPage({ params, wasteTypes = wasteTypesData, records
           <a class="flex min-w-0 items-center gap-3 px-4 py-4 hover:bg-[#f8fbf8] sm:px-6" href="#/waste-types/${encodeURIComponent(w.id)}">
             <span class="shrink-0 rounded-lg bg-[#e9f5ef] px-2.5 py-1 text-xs font-bold text-primary-dark">${esc(w.code)}</span>
             <span class="min-w-0 flex-1 break-words text-sm font-semibold">${esc(w.name)}</span>
-            <span class="hidden text-xs text-muted sm:inline">ใช้ในงานบริหารจัดการมูลฝอย ${number(wasteTypeUsage(w.name, records))} รายการ</span>
+            <span class="hidden text-xs text-muted sm:inline">ใช้ในงานบริหารจัดการมูลฝอย ${number(wasteTypeUsage(w))} รายการ</span>
             ${icon('chevron', 16, 'shrink-0 text-muted')}
           </a>
         `).join('')}
@@ -270,13 +269,14 @@ export function wasteTypeListPage({ params, wasteTypes = wasteTypesData, records
   `;
 }
 
-export function wasteTypeDetailPage({ wasteType, records = getActivityRecords() }) {
-  const usage = wasteTypeUsage(wasteType.name, records);
+export function wasteTypeDetailPage({ wasteType }) {
+  const usage = wasteTypeUsage(wasteType);
+  const referenced = Number(wasteType.referenced_count) || 0;
   return `
     ${pageHeading('ข้อมูลพื้นฐาน', wasteType.name, 'รายละเอียดประเภทขยะมูลฝอย', `
       <div class="flex flex-wrap gap-2">
         ${outlinedButton('แก้ไข', `#/waste-types/${encodeURIComponent(wasteType.id)}/edit`, 'edit')}
-        <button type="button" class="min-h-11 rounded-xl border border-[#eed8d5] px-4 text-sm font-bold text-[#b45148] hover:bg-[#fff7f6]" data-action="delete-reference" data-type="waste-types" data-id="${esc(wasteType.id)}" data-name="${esc(wasteType.name)}" data-usage="${usage}">
+        <button type="button" class="min-h-11 rounded-xl border border-[#eed8d5] px-4 text-sm font-bold text-[#b45148] hover:bg-[#fff7f6]" data-action="delete-reference" data-type="waste-types" data-id="${esc(wasteType.id)}" data-name="${esc(wasteType.name)}" data-usage="${referenced}">
           ${icon('trash', 17)} ลบประเภท
         </button>
       </div>
@@ -297,7 +297,7 @@ export function wasteTypeDetailPage({ wasteType, records = getActivityRecords() 
           <dd class="mt-1 font-bold">${number(usage)} รายการ</dd>
         </div>
       </dl>
-      ${usage ? `<p class="mt-6 rounded-xl border border-[#d7eadd] bg-[#f0f8f2] p-4 text-sm text-primary-dark">ประเภทนี้ถูกใช้ในรายการมูลฝอย ต้องเปลี่ยนประเภทในรายการเหล่านั้นก่อนจึงจะลบได้</p>` : ''}
+      ${referenced ? `<p class="mt-6 rounded-xl border border-[#d7eadd] bg-[#f0f8f2] p-4 text-sm text-primary-dark">ประเภทนี้ยังมีรายการมูลฝอยอ้างอิงอยู่ รวมถึงรายการที่ลบออกจากหน้าจอ จึงไม่สามารถลบประเภทได้</p>` : ''}
     </section>
   `;
 }
@@ -357,8 +357,8 @@ export async function deleteReference(type, id, name, usage, { navigate: nav = n
     const url = `${apiReferenceUrl(type)}/${id}`;
     await apiRequest(url, { method: 'DELETE' });
     toastFn(`ลบ${noun}เรียบร้อยแล้ว`);
-    await refreshData();
-    await refreshActivityData();
+    await refreshData(type);
+    invalidateActivityReference(type);
     nav(`/${type}`);
   } catch (error) {
     toastFn(error.message || `ไม่สามารถลบ${noun}ได้`, 'error');
@@ -373,8 +373,8 @@ export async function submitReference(form, type) {
   try {
     const url = `${apiReferenceUrl(type)}${id ? `/${id}` : ''}`;
     const response = await apiRequest(url, { method: id ? 'PUT' : 'POST', body: data });
-    await refreshReferenceData();
-    await refreshActivityData();
+    await refreshReferenceData(type);
+    invalidateActivityReference(type);
     navigate(`/${type}/${response.data.id}`);
     showToast('บันทึกข้อมูลแล้ว');
   } catch (error) {
@@ -391,8 +391,8 @@ export async function submitReference(form, type) {
 }
 
 export async function renderReferencesView(type, ctx) {
-  if (!isRefLoaded) {
-    await refreshReferenceData();
+  if (!loadedReferences.has(type)) {
+    await refreshReferenceData(type);
   }
 
   const isZone = type === 'cleaning-zones';

@@ -19,7 +19,7 @@ let activityReferences = {
   'cleaning-zones': [],
   'waste-types': [],
 };
-let isDataLoaded = false;
+const loadedReferenceTypes = new Set();
 const expandedFilters = new Set();
 let formDraft = null;
 
@@ -39,22 +39,30 @@ export function setActivityReferences(refs) {
   activityReferences = { ...activityReferences, ...refs };
 }
 
-export async function refreshActivityData() {
-  try {
-    const [zones, wastes, ...activityResults] = await Promise.all([
-      can('cleaning-zones.view') ? allPages(apiReferenceUrl('cleaning-zones')) : Promise.resolve([]),
-      can('waste-types.view') ? allPages(apiReferenceUrl('waste-types')) : Promise.resolve([]),
-      ...modules.map((m) => (can(`${m.id}.view`) ? allPages(apiActivityUrl(m.id)) : Promise.resolve([]))),
-    ]);
+export function invalidateActivityReference(type) {
+  loadedReferenceTypes.delete(type);
+  activityReferences[type] = [];
+}
 
-    activityReferences['cleaning-zones'] = zones || [];
-    activityReferences['waste-types'] = wastes || [];
-    activityRecords = activityResults.flat();
-    isDataLoaded = true;
-  } catch (error) {
-    console.error('Failed to load activity data:', error);
-    throw error;
+async function loadActivityReferences(module) {
+  const types = [...new Set(module.fields.filter((field) => field.type === 'reference').map((field) => field.reference))];
+  for (const type of types) {
+    if (loadedReferenceTypes.has(type) || !can(`${type}.view`)) continue;
+    activityReferences[type] = await allPages(apiReferenceUrl(type));
+    loadedReferenceTypes.add(type);
   }
+}
+
+export async function refreshActivityData(moduleId, params = new URLSearchParams()) {
+  const module = modules.find((item) => item.id === moduleId);
+  if (!module) throw new Error('Unknown activity module');
+  const query = new URLSearchParams({ per_page: '6', page: String(Math.max(1, Number.parseInt(params.get('page'), 10) || 1)) });
+  for (const key of ['q', 'from', 'to', 'sort', ...module.fields.filter((field) => field.type === 'reference').map((field) => field.name)]) {
+    if (params.get(key)) query.set(key, params.get(key));
+  }
+  const result = await apiRequest(`${apiActivityUrl(moduleId)}?${query}`);
+  activityRecords = Array.isArray(result.data) ? result.data : [];
+  return result;
 }
 
 export function formatField(field, value, references = activityReferences) {
@@ -138,39 +146,16 @@ export function validateForm(form, module, references = activityReferences) {
   return { data, errors };
 }
 
-export function listPage({ module, group, params, records = activityRecords, references = activityReferences }) {
+export function listPage({ module, group, params, records = activityRecords, references = activityReferences, meta = null }) {
   const query = params.get('q') || '';
   const from = params.get('from') || '';
   const to = params.get('to') || '';
   const sort = params.get('sort') || 'newest';
-  const page = Math.max(1, Number(params.get('page')) || 1);
-
-  let rows = records.filter((r) => r.module === module.id);
-  if (query) {
-    const qLower = query.toLocaleLowerCase('th');
-    rows = rows.filter((r) =>
-      module.fields.some((field) => {
-        const val = field.type === 'reference'
-          ? references[field.reference]?.find((item) => String(item.id) === String(r[field.name]))?.name
-          : r[field.name];
-        return String(val ?? '').toLocaleLowerCase('th').includes(qLower);
-      })
-    );
-  }
-  if (from) rows = rows.filter((r) => r.service_date >= from);
-  if (to) rows = rows.filter((r) => r.service_date <= to);
-
-  module.fields.filter((f) => f.type === 'reference').forEach((f) => {
-    const v = params.get(f.name);
-    if (v) rows = rows.filter((r) => String(r[f.name]) === String(v));
-  });
-
-  rows.sort((a, b) => (sort === 'oldest' ? a.service_date.localeCompare(b.service_date) : b.service_date.localeCompare(a.service_date)));
-
   const pageSize = 6;
-  const pages = Math.max(1, Math.ceil(rows.length / pageSize));
-  const safePage = Math.min(page, pages);
-  const visible = rows.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const total = Math.max(0, Number(meta?.total ?? records.length) || 0);
+  const pages = Math.max(1, Number(meta?.last_page) || Math.ceil(total / pageSize) || 1);
+  const safePage = Math.min(pages, Math.max(1, Number(meta?.current_page ?? params.get('page')) || 1));
+  const visible = records;
   const shownFields = module.fields.filter((f) => f.name !== 'service_date').slice(0, 3);
 
   const buildPage = (next) => {
@@ -242,7 +227,7 @@ export function listPage({ module, group, params, records = activityRecords, ref
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-3.5 sm:px-6 sm:py-4">
         <div>
           <h2 id="records-title" class="text-sm font-bold">รายการข้อมูล</h2>
-          <p class="mt-0.5 text-xs text-muted">พบ ${number(rows.length)} รายการ</p>
+          <p class="mt-0.5 text-xs text-muted">พบ ${number(total)} รายการ</p>
         </div>
         <span class="rounded-full bg-[#f0f7f2] px-2.5 py-1 text-[11px] font-bold text-primary">${esc(module.short)}</span>
       </div>
@@ -274,7 +259,7 @@ export function listPage({ module, group, params, records = activityRecords, ref
         </table>
       </div>
       <div class="flex flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-3.5 text-xs text-muted sm:px-6 sm:py-4">
-        <span>แสดง ${number((safePage - 1) * pageSize + 1)}–${number(Math.min(safePage * pageSize, rows.length))} จาก ${number(rows.length)} รายการ</span>
+        <span>แสดง ${number((safePage - 1) * pageSize + 1)}–${number(Math.min(safePage * pageSize, total))} จาก ${number(total)} รายการ</span>
         <div class="flex items-center gap-2">
           <a href="${buildPage(Math.max(1, safePage - 1))}" class="inline-flex min-h-11 items-center rounded-lg border border-line px-3 py-1.5 ${safePage === 1 ? 'pointer-events-none opacity-45' : 'hover:bg-canvas'}" ${safePage === 1 ? 'aria-disabled="true" tabindex="-1"' : ''}>ก่อนหน้า</a>
           <span class="px-1 font-bold text-ink">${safePage} / ${pages}</span>
@@ -367,7 +352,7 @@ export function formPage({ module, group, record = null, errors = {}, values = n
   `;
 }
 
-export async function deleteActivity(moduleId, recordId, { navigate: nav = navigate, showToast: toastFn = showToast, refreshData = refreshActivityData } = {}) {
+export async function deleteActivity(moduleId, recordId, { navigate: nav = navigate, showToast: toastFn = showToast } = {}) {
   const confirmed = await showConfirmModal({
     title: 'ยืนยันการลบรายการ',
     message: 'รายการนี้จะถูกลบออกจากฐานข้อมูลอย่างถาวร คุณต้องการดำเนินการต่อหรือไม่?',
@@ -382,7 +367,6 @@ export async function deleteActivity(moduleId, recordId, { navigate: nav = navig
     const url = `${apiActivityUrl(moduleId)}/${recordId}`;
     await apiRequest(url, { method: 'DELETE' });
     toastFn('ลบรายการเรียบร้อยแล้ว');
-    await refreshData();
     nav(`/module/${moduleId}`);
   } catch (error) {
     toastFn(error.message || 'ไม่สามารถลบรายการได้', 'error');
@@ -395,9 +379,7 @@ export async function submitActivity(form) {
   if (!module) return;
 
   const { data, errors } = validateForm(form, module, activityReferences);
-  const existing = form.dataset.id
-    ? activityRecords.find((item) => String(item.id) === form.dataset.id && item.module === module.id)
-    : null;
+  const existing = form.dataset.id ? { id: form.dataset.id } : null;
 
   if (Object.keys(errors).length) {
     formDraft = data;
@@ -414,7 +396,6 @@ export async function submitActivity(form) {
     const method = existing ? 'PUT' : 'POST';
     const response = await apiRequest(url, { method, body: data });
     formDraft = null;
-    await refreshActivityData();
     navigate(`/module/${module.id}/${response.data.id}`);
     showToast('บันทึกข้อมูลแล้ว');
   } catch (error) {
@@ -430,10 +411,6 @@ export async function submitActivity(form) {
 }
 
 export async function renderActivitiesView(ctx) {
-  if (!isDataLoaded) {
-    await refreshActivityData();
-  }
-
   const moduleId = ctx.parts[1];
   const module = modules.find((m) => m.id === moduleId);
   if (!module) {
@@ -442,22 +419,37 @@ export async function renderActivitiesView(ctx) {
   const group = groups.find((g) => g.id === module.group);
 
   if (ctx.parts.length === 2) {
-    return listPage({ module, group, params: ctx.params, records: activityRecords, references: activityReferences });
+    const [result] = await Promise.all([refreshActivityData(moduleId, ctx.params), loadActivityReferences(module)]);
+    if (!ctx.isCurrent()) return null;
+    const requestedPage = Math.max(1, Number.parseInt(ctx.params.get('page'), 10) || 1);
+    const lastPage = Math.max(1, Number(result.meta?.last_page) || 1);
+    if (Number(result.meta?.total) > 0 && requestedPage > lastPage) {
+      const nextParams = new URLSearchParams(ctx.params);
+      nextParams.set('page', String(lastPage));
+      navigate(`/module/${moduleId}?${nextParams}`);
+      return null;
+    }
+    return listPage({ module, group, params: ctx.params, records: result.data, references: activityReferences, meta: result.meta });
   }
 
   if (ctx.parts.length === 3 && ctx.parts[2] === 'new') {
     if (!can(`${module.id}.create`)) {
       return `<div class="p-8 text-center text-red-600">ไม่มีสิทธิ์สร้างข้อมูลในหมวดนี้</div>`;
     }
+    await loadActivityReferences(module);
     return formPage({ module, group, record: null, references: activityReferences });
   }
 
   const recordId = decodeURIComponent(ctx.parts[2] || '');
-  const record = activityRecords.find((r) => r.module === module.id && String(r.id) === recordId);
-
-  if (!record) {
-    return `<div class="p-8 text-center text-muted">ไม่พบรายการข้อมูลที่ต้องการ</div>`;
+  let result;
+  try {
+    [result] = await Promise.all([apiRequest(`${apiActivityUrl(moduleId)}/${encodeURIComponent(recordId)}`), loadActivityReferences(module)]);
+  } catch (error) {
+    if (error.status === 404) return `<div class="p-8 text-center text-muted">ไม่พบรายการข้อมูลที่ต้องการ</div>`;
+    throw error;
   }
+  if (!ctx.isCurrent()) return null;
+  const record = result.data;
 
   if (ctx.parts.length === 4 && ctx.parts[3] === 'edit') {
     if (!can(`${module.id}.update`)) {

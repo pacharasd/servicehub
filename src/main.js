@@ -28,7 +28,6 @@ import { renderUsersView } from './views/users.js';
 import {
   renderActivitiesView,
   deleteActivity,
-  refreshActivityData,
   submitActivity,
 } from './views/activities.js';
 import {
@@ -55,6 +54,7 @@ let reportMeta = null;
 let reportLoading = false;
 let reportError = '';
 let reportRequest = 0;
+let routeRetryAt = 0;
 
 async function loadDashboard(ctx = null) {
   const requestId = ++overviewRequest;
@@ -182,6 +182,9 @@ const routes = {
     expandActiveSidebarGroup(moduleId);
     const mod = modules.find((m) => m.id === moduleId);
     const crumbs = mod ? [{ label: mod.short, current: true }] : [];
+    if (document.querySelector('#filter-form')?.dataset.module !== moduleId || ctx.parts.length > 2) {
+      app.innerHTML = renderShell('<section class="panel-shadow rounded-2xl border border-line bg-white p-6" role="status">กำลังโหลดข้อมูล...</section>', moduleId, crumbs);
+    }
     const content = await renderActivitiesView(ctx);
     if (!ctx.isCurrent()) return;
     app.innerHTML = renderShell(content, moduleId, crumbs);
@@ -303,7 +306,6 @@ function bindGlobalEvents() {
       await deleteActivity(moduleId, recordId, {
         navigate,
         showToast,
-        refreshData: refreshActivityData,
       });
       return;
     }
@@ -333,6 +335,10 @@ function bindGlobalEvents() {
       return;
     }
     if (action === 'retry-route') {
+      if (Date.now() < routeRetryAt) {
+        showToast(`กรุณารออีก ${Math.ceil((routeRetryAt - Date.now()) / 1000)} วินาทีก่อนลองใหม่`, 'error');
+        return;
+      }
       navigate(route().hash);
       return;
     }
@@ -470,7 +476,7 @@ function bindGlobalEvents() {
     if (form && form.isConnected) {
       form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     }
-  }, 300);
+  }, 500);
 
   document.addEventListener('input', (e) => {
     if (e.target.dataset.action === 'live-filter' && e.target.type !== 'date') {
@@ -514,9 +520,16 @@ function bootstrap() {
       const content = `<section class="panel-shadow mx-auto max-w-lg rounded-2xl border border-line bg-white p-6 text-center" role="alert"><h1 class="text-xl font-bold">ไม่มีสิทธิ์เข้าถึงหน้านี้</h1><p class="mt-2 text-sm text-muted">บัญชีนี้ยังไม่ได้รับสิทธิ์ดูข้อมูลในหมวดที่เลือก</p><a href="#/dashboard" class="mt-5 inline-flex min-h-11 items-center font-bold text-primary underline">กลับแดชบอร์ด</a></section>`;
       app.innerHTML = renderShell(content, null, [{ label: 'ไม่มีสิทธิ์เข้าถึง', current: true }]);
     },
-    onError: (_error, ctx) => {
+    onError: (error, ctx) => {
       if (!ctx.isCurrent()) return;
-      const content = `<section class="panel-shadow mx-auto max-w-lg rounded-2xl border border-red-200 bg-white p-6 text-center" role="alert"><h1 class="text-xl font-bold">โหลดหน้าไม่สำเร็จ</h1><p class="mt-2 text-sm text-muted">กรุณาลองใหม่อีกครั้ง หากยังพบปัญหาให้ติดต่อผู้ดูแลระบบ</p><button type="button" data-action="retry-route" class="mt-5 min-h-11 rounded-xl border border-line px-4 font-bold text-primary">ลองอีกครั้ง</button></section>`;
+      const rateLimited = error.status === 429;
+      const retryAfter = Number(error.retryAfterSeconds) || 0;
+      routeRetryAt = rateLimited && retryAfter > 0 ? Date.now() + retryAfter * 1000 : 0;
+      const title = rateLimited ? 'คำขอถี่เกินกำหนด' : error.status === 403 ? 'ไม่มีสิทธิ์เข้าถึงข้อมูล' : 'โหลดหน้าไม่สำเร็จ';
+      const description = rateLimited
+        ? `กรุณารอ${retryAfter > 0 ? ` ${retryAfter} วินาที` : 'สักครู่'}ก่อนลองใหม่`
+        : error.status === 403 ? 'บัญชีนี้ยังไม่ได้รับสิทธิ์ดูข้อมูลในส่วนที่เลือก' : 'กรุณาลองใหม่อีกครั้ง หากยังพบปัญหาให้ติดต่อผู้ดูแลระบบ';
+      const content = `<section class="panel-shadow mx-auto max-w-lg rounded-2xl border border-red-200 bg-white p-6 text-center" role="alert"><h1 class="text-xl font-bold">${title}</h1><p class="mt-2 text-sm text-muted">${description}</p><button type="button" data-action="retry-route" class="mt-5 min-h-11 rounded-xl border border-line px-4 font-bold text-primary">ลองอีกครั้ง</button></section>`;
       app.innerHTML = renderShell(content, null, [{ label: 'โหลดหน้าไม่สำเร็จ', current: true }]);
     },
     afterRender: () => {

@@ -13,6 +13,37 @@ use Illuminate\Support\Facades\DB;
 
 class ReferenceRecordController extends Controller
 {
+    private function withUsageCount(string $type, array $items): array
+    {
+        [$table, $column] = match ($type) {
+            'cleaning-zones' => ['road_washings', 'cleaning_zone_id'],
+            'waste-types' => ['waste_collections', 'waste_type_id'],
+            default => [null, null],
+        };
+
+        if (! $table || $items === []) {
+            return array_map(fn ($item) => $item->toArray(), $items);
+        }
+
+        $ids = array_map(fn ($item) => $item->id, $items);
+        $counts = DB::table($table)
+            ->select($column)
+            ->selectRaw('SUM(CASE WHEN deleted_at IS NULL THEN 1 ELSE 0 END) AS usage_count')
+            ->selectRaw('COUNT(*) AS referenced_count')
+            ->whereIn($column, $ids)
+            ->groupBy($column)
+            ->get()
+            ->keyBy($column);
+
+        return array_map(function ($item) use ($counts) {
+            return [
+                ...$item->toArray(),
+                'usage_count' => (int) ($counts[$item->id]->usage_count ?? 0),
+                'referenced_count' => (int) ($counts[$item->id]->referenced_count ?? 0),
+            ];
+        }, $items);
+    }
+
     private function query(string $type)
     {
         return (new ReferenceRecord)->setTable(ServiceCatalog::reference($type))->newQuery();
@@ -39,14 +70,14 @@ class ReferenceRecordController extends Controller
         $page = $query->orderBy($sort === 'name' ? 'name' : ($sort === 'newest' ? 'id' : 'code'), $sort === 'newest' ? 'desc' : 'asc')
             ->paginate(min(100, max(1, (int) $request->input('per_page', 20))));
 
-        return response()->json(['data' => $page->items(), 'meta' => ['total' => $page->total(), 'current_page' => $page->currentPage(), 'last_page' => $page->lastPage()]]);
+        return response()->json(['data' => $this->withUsageCount($type, $page->items()), 'meta' => ['total' => $page->total(), 'current_page' => $page->currentPage(), 'last_page' => $page->lastPage()]]);
     }
 
     public function show(Request $request, string $type, int $record): JsonResponse
     {
         $this->authorizeAction($request, $type, 'view');
 
-        return response()->json(['data' => $this->query($type)->findOrFail($record)]);
+        return response()->json(['data' => $this->withUsageCount($type, [$this->query($type)->findOrFail($record)])[0]]);
     }
 
     public function store(SaveReferenceRequest $request, string $type): JsonResponse
