@@ -56,12 +56,13 @@ let reportLoading = false;
 let reportError = '';
 let reportRequest = 0;
 
-async function loadDashboard() {
+async function loadDashboard(ctx = null) {
   const requestId = ++overviewRequest;
   const { params } = route();
+  const isCurrent = () => (ctx ? ctx.isCurrent() : route().parts[0] === 'dashboard');
   overviewLoading = true;
   overviewError = '';
-  renderDashboard();
+  if (isCurrent()) renderDashboard();
 
   try {
     const query = new URLSearchParams();
@@ -69,13 +70,13 @@ async function loadDashboard() {
     if (params.has('to')) query.set('to', params.get('to'));
     const url = (window.serviceHubUrls?.apiDashboard || '/api/dashboard') + (query.size ? `?${query}` : '');
     const result = await apiRequest(url);
-    if (requestId !== overviewRequest) return;
+    if (requestId !== overviewRequest || !isCurrent()) return;
     overview = result.data;
   } catch (error) {
-    if (requestId !== overviewRequest) return;
+    if (requestId !== overviewRequest || !isCurrent()) return;
     overviewError = error.message || 'ไม่สามารถโหลดภาพรวมได้';
   } finally {
-    if (requestId === overviewRequest) {
+    if (requestId === overviewRequest && isCurrent()) {
       overviewLoading = false;
       renderDashboard();
     }
@@ -83,6 +84,7 @@ async function loadDashboard() {
 }
 
 function renderDashboard() {
+  if (route().parts[0] !== 'dashboard') return;
   const { params } = route();
   const content = dashboardContent({
     data: overview,
@@ -100,27 +102,29 @@ function renderDashboard() {
   initCustomSelects();
 }
 
-async function loadReports(parts, params) {
+async function loadReports(parts, params, ctx = null) {
   const module = parts[1] ? modules.find((m) => m.id === parts[1]) : null;
   const requestId = ++reportRequest;
+  const expectedHash = route().hash;
+  const isCurrent = () => (ctx ? ctx.isCurrent() : route().hash === expectedHash);
   reportLoading = true;
   reportError = '';
-  await renderReports(parts, params);
+  if (isCurrent()) await renderReports(parts, params);
 
   try {
     const template = window.serviceHubUrls?.apiReportDetail || '/api/reports/__MODULE__';
     const base = window.serviceHubUrls?.apiReports || '/api/reports';
     const url = (module ? template.replace('__MODULE__', encodeURIComponent(module.id)) : base) + (params.size ? `?${params}` : '');
     const result = await apiRequest(url);
-    if (requestId !== reportRequest) return;
+    if (requestId !== reportRequest || !isCurrent()) return;
     reportMeta = result.meta;
     if (module) reportDetail = result.data;
     else reportData = result.data;
   } catch (error) {
-    if (requestId !== reportRequest) return;
+    if (requestId !== reportRequest || !isCurrent()) return;
     reportError = error.fields?.to?.[0] || error.fields?.from?.[0] || error.fields?.month?.[0] || error.message || 'โหลดรายงานไม่สำเร็จ';
   } finally {
-    if (requestId === reportRequest) {
+    if (requestId === reportRequest && isCurrent()) {
       reportLoading = false;
       await renderReports(parts, params);
     }
@@ -128,6 +132,7 @@ async function loadReports(parts, params) {
 }
 
 async function renderReports(parts, params) {
+  if (route().parts[0] !== 'reports' || route().parts[1] !== parts[1]) return;
   const module = parts[1] ? modules.find((m) => m.id === parts[1]) : null;
   const content = reportBody({
     module,
@@ -153,9 +158,9 @@ async function renderReports(parts, params) {
  * Route Dispatch Table
  */
 const routes = {
-  dashboard: async () => {
+  dashboard: async (ctx) => {
     expandActiveSidebarGroup('dashboard');
-    await loadDashboard();
+    await loadDashboard(ctx);
   },
   users: async (ctx) => {
     if (!canManageUsers()) {
@@ -177,7 +182,9 @@ const routes = {
     expandActiveSidebarGroup(moduleId);
     const mod = modules.find((m) => m.id === moduleId);
     const crumbs = mod ? [{ label: mod.short, current: true }] : [];
-    app.innerHTML = renderShell(await renderActivitiesView(ctx), moduleId, crumbs);
+    const content = await renderActivitiesView(ctx);
+    if (!ctx.isCurrent()) return;
+    app.innerHTML = renderShell(content, moduleId, crumbs);
     initCustomSelects();
   },
   'cleaning-zones': async (ctx) => {
@@ -186,7 +193,9 @@ const routes = {
       return;
     }
     expandActiveSidebarGroup('cleaning-zones');
-    app.innerHTML = renderShell(await renderReferencesView('cleaning-zones', ctx), 'cleaning-zones', [{ label: 'เขตรักษาความสะอาด', current: true }]);
+    const content = await renderReferencesView('cleaning-zones', ctx);
+    if (!ctx.isCurrent()) return;
+    app.innerHTML = renderShell(content, 'cleaning-zones', [{ label: 'เขตรักษาความสะอาด', current: true }]);
     initCustomSelects();
   },
   'waste-types': async (ctx) => {
@@ -195,7 +204,9 @@ const routes = {
       return;
     }
     expandActiveSidebarGroup('waste-types');
-    app.innerHTML = renderShell(await renderReferencesView('waste-types', ctx), 'waste-types', [{ label: 'ประเภทขยะมูลฝอย', current: true }]);
+    const content = await renderReferencesView('waste-types', ctx);
+    if (!ctx.isCurrent()) return;
+    app.innerHTML = renderShell(content, 'waste-types', [{ label: 'ประเภทขยะมูลฝอย', current: true }]);
     initCustomSelects();
   },
   profile: async (ctx) => {
@@ -208,11 +219,13 @@ const routes = {
       return;
     }
     expandActiveSidebarGroup('audit-logs');
-    app.innerHTML = renderShell(await renderAuditLogsView(ctx), 'audit-logs', [{ label: 'ประวัติการแก้ไข', current: true }]);
+    const content = await renderAuditLogsView(ctx);
+    if (!ctx.isCurrent()) return;
+    app.innerHTML = renderShell(content, 'audit-logs', [{ label: 'ประวัติการแก้ไข', current: true }]);
   },
   reports: async (ctx) => {
     expandActiveSidebarGroup('reports');
-    await loadReports(ctx.parts, ctx.params);
+    await loadReports(ctx.parts, ctx.params, ctx);
   },
   '*': () => {
     navigate('#/dashboard');
@@ -317,6 +330,10 @@ function bindGlobalEvents() {
     if (action === 'retry-report') {
       const { parts, params } = route();
       loadReports(parts, params);
+      return;
+    }
+    if (action === 'retry-route') {
+      navigate(route().hash);
       return;
     }
     if (action === 'toggle-mobile-filters') {
@@ -492,6 +509,16 @@ function bootstrap() {
   bindGlobalEvents();
 
   initRouter(routes, {
+    onDenied: (ctx) => {
+      if (!ctx.isCurrent()) return;
+      const content = `<section class="panel-shadow mx-auto max-w-lg rounded-2xl border border-line bg-white p-6 text-center" role="alert"><h1 class="text-xl font-bold">ไม่มีสิทธิ์เข้าถึงหน้านี้</h1><p class="mt-2 text-sm text-muted">บัญชีนี้ยังไม่ได้รับสิทธิ์ดูข้อมูลในหมวดที่เลือก</p><a href="#/dashboard" class="mt-5 inline-flex min-h-11 items-center font-bold text-primary underline">กลับแดชบอร์ด</a></section>`;
+      app.innerHTML = renderShell(content, null, [{ label: 'ไม่มีสิทธิ์เข้าถึง', current: true }]);
+    },
+    onError: (_error, ctx) => {
+      if (!ctx.isCurrent()) return;
+      const content = `<section class="panel-shadow mx-auto max-w-lg rounded-2xl border border-red-200 bg-white p-6 text-center" role="alert"><h1 class="text-xl font-bold">โหลดหน้าไม่สำเร็จ</h1><p class="mt-2 text-sm text-muted">กรุณาลองใหม่อีกครั้ง หากยังพบปัญหาให้ติดต่อผู้ดูแลระบบ</p><button type="button" data-action="retry-route" class="mt-5 min-h-11 rounded-xl border border-line px-4 font-bold text-primary">ลองอีกครั้ง</button></section>`;
+      app.innerHTML = renderShell(content, null, [{ label: 'โหลดหน้าไม่สำเร็จ', current: true }]);
+    },
     afterRender: () => {
       initCustomSelects();
     },

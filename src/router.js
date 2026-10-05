@@ -115,6 +115,7 @@ export class Router {
     this.beforeHooks = [];
     this.afterHooks = [];
     this.notFoundHandler = null;
+    this.navigationSequence = 0;
 
     if (this.options.routes) {
       this.registerRoutes(this.options.routes);
@@ -236,7 +237,9 @@ export class Router {
    * ดำเนินการ Resolve เส้นทางปัจจุบันและเรนเดอร์หน้าจอ
    */
   async resolve() {
+    const navigationId = ++this.navigationSequence;
     const routeData = parseHash();
+    routeData.isCurrent = () => navigationId === this.navigationSequence && parseHash().hash === routeData.hash;
     this.current = routeData;
     currentRouteData = routeData;
 
@@ -244,8 +247,11 @@ export class Router {
     const config = this.routes[rootKey] || this.routes['*'];
 
     const guardResult = await this.checkGuards(routeData, config);
+    if (!routeData.isCurrent()) return;
     if (guardResult === false) {
-      if (this.notFoundHandler) {
+      if (typeof this.options.onDenied === 'function') {
+        await this.options.onDenied(routeData);
+      } else if (this.notFoundHandler) {
         await this.notFoundHandler(routeData);
       }
       setDocumentTitle('ไม่พบหน้าหรือไม่มีสิทธิ์เข้าถึง', this.options.titleSuffix);
@@ -267,11 +273,23 @@ export class Router {
     setDocumentTitle(pageTitle, this.options.titleSuffix);
 
     // Execute Handler
-    if (config?.handler) {
-      await config.handler(routeData);
-    } else if (this.notFoundHandler) {
-      await this.notFoundHandler(routeData);
+    try {
+      if (config?.handler) {
+        await config.handler(routeData);
+      } else if (this.notFoundHandler) {
+        await this.notFoundHandler(routeData);
+      }
+    } catch (error) {
+      if (!routeData.isCurrent()) return;
+      if (typeof this.options.onError === 'function') {
+        await this.options.onError(error, routeData);
+      } else {
+        throw error;
+      }
+      return;
     }
+
+    if (!routeData.isCurrent()) return;
 
     // Global afterHooks
     for (const hook of this.afterHooks) {
