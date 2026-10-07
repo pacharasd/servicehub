@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { apiRequest } from '../../src/api.js';
-import { invalidateActivityReference, renderActivitiesView, formPage } from '../../src/views/activities.js';
+import { invalidateActivityReference, renderActivitiesView, formPage, validateForm } from '../../src/views/activities.js';
 import { modules } from '../../src/data.js';
 
 function setEnvironment(fetchResponse) {
@@ -182,11 +182,36 @@ test('activity list renders standard empty state without filter banner when no f
   assert.match(html, /เพิ่มข้อมูลใหม่/);
 });
 
+test('waste form requires a valid end date and uses kilograms', () => {
+  setEnvironment(() => jsonResponse({ data: [] }));
+  const module = modules.find((item) => item.id === 'waste-collections');
+  const html = formPage({ module });
+  assert.match(html, /วันเริ่ม/);
+  assert.match(html, /name="end_date"[^>]*value=""/);
+  assert.match(html, /กิโลกรัม/);
+  const NativeFormData = globalThis.FormData;
+  globalThis.FormData = class {
+    constructor(values) { return Object.entries(values); }
+  };
+  try {
+    const data = { service_date: '2026-09-30', end_date: '2026-10-02', source: 'จุดเก็บ', waste_type_id: '1', waste_name: 'ขยะ', weight: '12.345' };
+    const refs = { 'waste-types': [{ id: 1, is_active: true }] };
+    assert.deepEqual(validateForm(data, module, refs).errors, {});
+    for (const end of ['', '2026-09-29', '2026-02-30', 'invalid']) {
+      assert.ok(validateForm({ ...data, end_date: end }, module, refs).errors.end_date);
+    }
+    assert.deepEqual(validateForm({ ...data, end_date: data.service_date }, module, refs).errors, {});
+  } finally {
+    globalThis.FormData = NativeFormData;
+  }
+});
+
 test('formPage defaults service_date to today for new records and preserves existing record service_date', () => {
   setEnvironment(() => jsonResponse({ data: [] }));
 
-  const now = new Date();
-  const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+  const part = (type) => parts.find((item) => item.type === type).value;
+  const todayIso = `${part('year')}-${part('month')}-${part('day')}`;
 
   const roadModule = modules.find((m) => m.id === 'road-washings');
 
@@ -206,4 +231,3 @@ test('formPage defaults service_date to today for new records and preserves exis
   });
   assert.match(editHtml, /name="service_date"[^>]*value="2026-09-15"/);
 });
-

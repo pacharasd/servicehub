@@ -122,23 +122,22 @@ class SampleDataSeeder extends Seeder
 
         // 3. Road Sweepings (การกวาดทำความสะอาดฝุ่นถนนสาธารณะ)
         $roadSweepings = [
-            ['road' => 'ถนนรัตนาธิเบศร์ ขาเข้า', 'storage_location' => 'ศูนย์พักขยะชั่วคราวศูนย์ราชการนนทบุรี', 'distance_km' => 6.50],
-            ['road' => 'ถนนประชาราษฎร์', 'storage_location' => 'จุดรวบรวมขยะท่าน้ำนนทบุรี', 'distance_km' => 3.20],
-            ['road' => 'ถนนติวานนท์ ฝั่งมุ่งหน้าปากเกร็ด', 'storage_location' => 'ศูนย์บริการสาธารณสุขแคราย', 'distance_km' => 5.40],
-            ['road' => 'ถนนกรุงเทพ-นนทบุรี', 'storage_location' => 'จุดพักขยะใต้สถานีรถไฟฟ้าแยกติวานนท์', 'distance_km' => 4.20],
-            ['road' => 'ถนนงามวงศ์วาน', 'storage_location' => 'จุดรวบรวมมูลฝอยแยกพงษ์เพชร', 'distance_km' => 3.80],
-            ['road' => 'ถนนสนามบินน้ำ', 'storage_location' => 'จุดพักขยะหน้าวัดบางกระสอ', 'distance_km' => 4.90],
-            ['road' => 'ถนนพิบูลสงคราม', 'storage_location' => 'ศูนย์ขนถ่ายมูลฝอยวัดเขมาภิรตาราม', 'distance_km' => 4.00],
-            ['road' => 'ถนนเลี่ยงเมืองนนทบุรี', 'storage_location' => 'ศูนย์พักขยะชุมชนเลี่ยงเมือง', 'distance_km' => 5.10],
-            ['road' => 'ถนนนครอินทร์ ฝั่งขาออก', 'storage_location' => 'จุดรวมขยะเชิงสะพานพระราม 5', 'distance_km' => 4.60],
-            ['road' => 'ซอยเรวดี', 'storage_location' => 'จุดพักขยะปากซอยเรวดี 45', 'distance_km' => 3.10],
+            ['road' => 'ถนนรัตนาธิเบศร์ ขาเข้า', 'distance_km' => 6.50],
+            ['road' => 'ถนนประชาราษฎร์', 'distance_km' => 3.20],
+            ['road' => 'ถนนติวานนท์ ฝั่งมุ่งหน้าปากเกร็ด', 'distance_km' => 5.40],
+            ['road' => 'ถนนกรุงเทพ-นนทบุรี', 'distance_km' => 4.20],
+            ['road' => 'ถนนงามวงศ์วาน', 'distance_km' => 3.80],
+            ['road' => 'ถนนสนามบินน้ำ', 'distance_km' => 4.90],
+            ['road' => 'ถนนพิบูลสงคราม', 'distance_km' => 4.00],
+            ['road' => 'ถนนเลี่ยงเมืองนนทบุรี', 'distance_km' => 5.10],
+            ['road' => 'ถนนนครอินทร์ ฝั่งขาออก', 'distance_km' => 4.60],
+            ['road' => 'ซอยเรวดี', 'distance_km' => 3.10],
         ];
         foreach ($roadSweepings as $i => $row) {
             $date = $dates[$i % count($dates)];
             DB::table('road_sweepings')->updateOrInsert(
                 ['road' => $row['road'], 'service_date' => $date],
                 [
-                    'storage_location' => $row['storage_location'],
                     'distance_km' => $row['distance_km'],
                     'created_by' => $adminId,
                     'updated_by' => $adminId,
@@ -195,6 +194,7 @@ class SampleDataSeeder extends Seeder
             DB::table('waste_collections')->updateOrInsert(
                 ['source' => $row['source'], 'service_date' => $date],
                 [
+                    'end_date' => $date,
                     'waste_type_id' => $typeId,
                     'waste_name' => $row['waste_name'],
                     'weight' => $row['weight'],

@@ -178,7 +178,7 @@ class ServiceRecordController extends Controller
         return response()->streamDownload(function () use ($query, $columns, $fields, $referenceMaps) {
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF");
-            fputcsv($handle, $columns);
+            fputcsv($handle, array_map(fn ($column) => $column === 'weight' ? 'weight_kg' : $column, $columns));
             foreach ($query->cursor() as $record) {
                 fputcsv($handle, array_map(function ($column) use ($record, $fields, $referenceMaps) {
                     $value = (string) ($record->{$column} ?? '');

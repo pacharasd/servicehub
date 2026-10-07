@@ -103,7 +103,8 @@ class ServiceReports
             }
             $unit = match ($column) {
                 'distance_km' => 'กม.',
-                'quantity', 'weight' => 'ตัน',
+                'quantity' => 'ตัน',
+                'weight' => 'กิโลกรัม',
                 'sediment_quantity', 'volume' => 'ลบ.ม.',
                 'sludge_quantity', 'fertilizer_remaining' => 'กก.',
                 'fee_amount' => 'บาท',
@@ -161,7 +162,7 @@ class ServiceReports
                     'name' => $row->name ?? 'ไม่พบข้อมูลอ้างอิง',
                     'count' => (int) $row->count,
                     'total' => (float) $row->total,
-                    'unit' => $metric === 'weight' ? 'ตัน' : 'กม.',
+                    'unit' => $metric === 'weight' ? 'กิโลกรัม' : 'กม.',
                 ])->all();
         }
         $titleColumn = match ($module) {

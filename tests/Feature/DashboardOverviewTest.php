@@ -27,6 +27,7 @@ class DashboardOverviewTest extends TestCase
     {
         return DB::table($table)->insertGetId([
             'service_date' => $date,
+            ...($table === 'waste_collections' ? ['end_date' => $date] : []),
             'created_at' => $created,
             'updated_at' => $created,
             ...$fields,

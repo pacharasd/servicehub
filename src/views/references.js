@@ -124,8 +124,8 @@ export function zoneDetailPage({ zone }) {
     ${pageHeading('ข้อมูลพื้นฐาน', zone.name, 'รายละเอียดเขตรักษาความสะอาด', `
       <div class="flex flex-wrap gap-2">
         ${outlinedButton('แก้ไข', `#/cleaning-zones/${encodeURIComponent(zone.id)}/edit`, 'edit')}
-        <button type="button" class="min-h-11 rounded-xl border border-[#eed8d5] px-4 text-sm font-bold text-[#b45148] hover:bg-[#fff7f6]" data-action="delete-reference" data-type="cleaning-zones" data-id="${esc(zone.id)}" data-name="${esc(zone.name)}" data-usage="${referenced}">
-          ${icon('trash', 17)} ลบเขต
+        <button type="button" class="inline-flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-[#eed8d5] bg-white px-4 py-2.5 text-sm font-bold text-[#b45148] hover:bg-[#fff7f6] sm:w-auto" data-action="delete-reference" data-type="cleaning-zones" data-id="${esc(zone.id)}" data-name="${esc(zone.name)}" data-usage="${referenced}">
+          ${icon('trash', 17)}<span>ลบเขต</span>
         </button>
       </div>
     `)}
@@ -276,8 +276,8 @@ export function wasteTypeDetailPage({ wasteType }) {
     ${pageHeading('ข้อมูลพื้นฐาน', wasteType.name, 'รายละเอียดประเภทขยะมูลฝอย', `
       <div class="flex flex-wrap gap-2">
         ${outlinedButton('แก้ไข', `#/waste-types/${encodeURIComponent(wasteType.id)}/edit`, 'edit')}
-        <button type="button" class="min-h-11 rounded-xl border border-[#eed8d5] px-4 text-sm font-bold text-[#b45148] hover:bg-[#fff7f6]" data-action="delete-reference" data-type="waste-types" data-id="${esc(wasteType.id)}" data-name="${esc(wasteType.name)}" data-usage="${referenced}">
-          ${icon('trash', 17)} ลบประเภท
+        <button type="button" class="inline-flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-[#eed8d5] bg-white px-4 py-2.5 text-sm font-bold text-[#b45148] hover:bg-[#fff7f6] sm:w-auto" data-action="delete-reference" data-type="waste-types" data-id="${esc(wasteType.id)}" data-name="${esc(wasteType.name)}" data-usage="${referenced}">
+          ${icon('trash', 17)}<span>ลบประเภท</span>
         </button>
       </div>
     `)}

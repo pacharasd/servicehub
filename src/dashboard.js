@@ -1,7 +1,7 @@
 import { renderDatePresets } from './utils/filter.js';
 
 const metricUnits = {
-  distance_km: 'กม.', quantity: 'ตัน', weight: 'ตัน', sediment_quantity: 'ลบ.ม.',
+  distance_km: 'กม.', quantity: 'ตัน', weight: 'กิโลกรัม', sediment_quantity: 'ลบ.ม.',
   volume: 'ลบ.ม.', fee_amount: 'บาท', sludge_quantity: 'กก.',
   fertilizer_remaining_latest: 'กก.', communities_count: 'ชุมชน', participants_count: 'คน',
 };
@@ -63,7 +63,7 @@ export function dashboardContent({ data, loading, error, params, groups, modules
       ['ระยะทางดำเนินงานรวม', visibleModules.filter(m => m.group === 'cleaning').reduce((sum, m) => sum + metricValue(m.id, 'distance_km'), 0), 'กม.'],
       ...(visible('waterway-cleanings') ? [['ผักตบชวาและมูลฝอยที่กำจัด', metricValue('waterway-cleanings', 'quantity'), 'ตัน']] : []),
     ],
-    waste: [['น้ำหนักมูลฝอย', metricValue('waste-collections', 'weight'), 'ตัน']],
+    waste: [['น้ำหนักมูลฝอย', metricValue('waste-collections', 'weight'), 'กิโลกรัม']],
     sanitation: [
       ...(visible('drain-cleanings') ? [['ตะกอนจากงานลอกท่อ', metricValue('drain-cleanings', 'sediment_quantity'), 'ลบ.ม.']] : []),
       ...(visible('septic-pumpings') ? [['สิ่งปฏิกูลที่สูบ', metricValue('septic-pumpings', 'volume'), 'ลบ.ม.']] : []),

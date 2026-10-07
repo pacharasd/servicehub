@@ -136,13 +136,16 @@ export function validateForm(form, module, references = activityReferences) {
       if (!Number.isFinite(num) || num < 0 || (field.type === 'integer' && !Number.isInteger(num))) {
         errors[field.name] = `กรุณาระบุ${field.label}เป็นจำนวนที่ถูกต้อง`;
       }
-    } else if (value && field.type === 'date' && Number.isNaN(new Date(value).getTime())) {
+    } else if (value && field.type === 'date' && (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(new Date(`${value}T00:00:00Z`).getTime()) || new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) !== value)) {
       errors[field.name] = 'กรุณาระบุวันที่ที่ถูกต้อง';
     } else if (field.type === 'reference' && value && !references[field.reference]?.some((item) => String(item.id) === value && item.is_active)) {
       errors[field.name] = `กรุณาเลือก${field.label}จากรายการ`;
     }
   });
 
+  if (module.id === 'waste-collections' && data.end_date && data.service_date && data.end_date < data.service_date) {
+    errors.end_date = 'วันที่สิ้นสุดต้องไม่ก่อนวันเริ่ม';
+  }
   return { data, errors };
 }
 
@@ -269,7 +272,7 @@ export function listPage({ module, group, params, records = activityRecords, ref
         <table class="w-full min-w-[650px] text-left text-sm" role="table">
           <thead class="bg-[#f9fbf9] text-xs font-semibold text-muted">
             <tr>
-              <th scope="col" class="px-5 py-3.5 whitespace-nowrap">วันที่ดำเนินงาน</th>
+              <th scope="col" class="px-5 py-3.5 whitespace-nowrap">${module.id === 'waste-collections' ? 'วันเริ่ม' : 'วันที่ดำเนินงาน'}</th>
               ${shownFields.map((f) => `<th scope="col" class="px-5 py-3.5 whitespace-nowrap">${esc(f.label)}</th>`).join('')}
               <th scope="col" class="px-5 py-3.5 whitespace-nowrap">ผู้บันทึก</th>
               <th scope="col" class="px-5 py-3.5 whitespace-nowrap text-right">ดูข้อมูล</th>
@@ -375,11 +378,9 @@ export function formPage({ module, group, record = null, errors = {}, values = n
   const editing = Boolean(record);
   const data = { ...(values || formDraft || record || {}) };
   if (!editing && !data.service_date) {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    data.service_date = `${y}-${m}-${d}`;
+    const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+    const part = (type) => parts.find((item) => item.type === type).value;
+    data.service_date = `${part('year')}-${part('month')}-${part('day')}`;
   }
   const title = `${editing ? 'แก้ไข' : 'เพิ่ม'}ข้อมูล${module.short}`;
 
