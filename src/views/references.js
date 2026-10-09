@@ -186,13 +186,10 @@ export function zoneFormPage(zone = null, errors = {}, values = zone || {}) {
 
 export function wasteTypeListPage({ params, wasteTypes = wasteTypesData }) {
   const query = (params.get('q') || '').trim().toLocaleLowerCase('th-TH');
-  const sort = params.get('sort') === 'name' ? 'name' : 'code';
-  const status = params.get('status') || 'all';
   const pageSize = 10;
   const rows = wasteTypes
     .filter((w) => !query || (w.code + ' ' + w.name).toLocaleLowerCase('th-TH').includes(query))
-    .filter((w) => status === 'all' ? true : (status === 'active' ? w.is_active : !w.is_active))
-    .sort((a, b) => String(a[sort]).localeCompare(String(b[sort]), 'th', { numeric: true }));
+    .sort((a, b) => String(a.code).localeCompare(String(b.code), 'th', { numeric: true }));
 
   const pages = Math.max(1, Math.ceil(rows.length / pageSize));
   const page = Math.min(pages, Math.max(1, Number.parseInt(params.get('page'), 10) || 1));
@@ -201,8 +198,6 @@ export function wasteTypeListPage({ params, wasteTypes = wasteTypesData }) {
   const pageHref = (target) => {
     const next = new URLSearchParams();
     if (params.get('q')) next.set('q', params.get('q'));
-    if (status !== 'all') next.set('status', status);
-    if (sort !== 'code') next.set('sort', sort);
     if (target > 1) next.set('page', String(target));
     return '#/waste-types' + (next.size ? '?' + next : '');
   };
@@ -210,25 +205,10 @@ export function wasteTypeListPage({ params, wasteTypes = wasteTypesData }) {
   return `
     ${pageHeading('ข้อมูลพื้นฐาน', 'ประเภทขยะมูลฝอย', 'จัดการรหัสและชื่อประเภทสำหรับรายการมูลฝอย', primaryButton('เพิ่มประเภท', '#/waste-types/new'))}
     <section class="panel-shadow mb-5 rounded-2xl border border-line bg-white p-4 sm:p-6">
-      <form id="wasteType-filter" class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_160px_160px_auto_auto] sm:items-end">
-        <div>
+      <form id="wasteType-filter" class="flex min-w-0 flex-wrap items-end justify-start gap-3">
+        <div class="w-full min-w-0 max-w-[400px]">
           <label for="wasteType-search" class="mb-1.5 block text-sm font-semibold">ค้นหา</label>
           <input id="wasteType-search" name="q" type="search" class="field" placeholder="พิมพ์ค้นหาทันที..." value="${esc(params.get('q') || '')}" data-action="live-filter" autocomplete="off">
-        </div>
-        <div>
-          <label for="wasteType-status" class="mb-1.5 block text-sm font-semibold">สถานะ</label>
-          <select id="wasteType-status" name="status" class="field master-native-select" data-action="live-filter">
-            <option value="all" ${status === 'all' ? 'selected' : ''}>ทุกสถานะ</option>
-            <option value="active" ${status === 'active' ? 'selected' : ''}>ใช้งานอยู่</option>
-            <option value="inactive" ${status === 'inactive' ? 'selected' : ''}>ระงับแล้ว</option>
-          </select>
-        </div>
-        <div>
-          <label for="wasteType-sort" class="mb-1.5 block text-sm font-semibold">เรียงตาม</label>
-          <select id="wasteType-sort" name="sort" class="field master-native-select" data-action="live-filter">
-            <option value="code" ${sort === 'code' ? 'selected' : ''}>รหัสประเภท</option>
-            <option value="name" ${sort === 'name' ? 'selected' : ''}>ชื่อประเภท</option>
-          </select>
         </div>
         <button type="submit" class="min-h-11 rounded-xl bg-primary px-5 text-sm font-bold text-white hover:bg-primary-dark">ค้นหา</button>
         <a href="#/waste-types" data-action="clear-filters" class="inline-flex min-h-11 items-center justify-center rounded-xl border border-line px-4 text-xs font-semibold text-muted hover:bg-canvas">ล้างตัวกรอง</a>

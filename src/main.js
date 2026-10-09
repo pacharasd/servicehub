@@ -11,6 +11,7 @@ import { icon } from './utils/icons.js';
 import { primaryButton, outlinedButton } from './utils/layout.js';
 import { initToastContainer, showToast } from './components/toast.js';
 import { initCustomSelects } from './components/select.js';
+import { initThaiDatePickers, syncThaiDateInputs } from './components/thaiDatePicker.js';
 import { debounce } from './utils/filter.js';
 import {
   initShell,
@@ -366,6 +367,7 @@ function bindGlobalEvents() {
         }
         if (form.elements.from) form.elements.from.value = from;
         if (form.elements.to) form.elements.to.value = to;
+        syncThaiDateInputs(form);
         form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
       }
       return;
@@ -461,8 +463,6 @@ function bindGlobalEvents() {
       const data = new FormData(e.target);
       const params = new URLSearchParams();
       if (String(data.get('q') || '').trim()) params.set('q', String(data.get('q')).trim());
-      if (data.get('status') && data.get('status') !== 'all') params.set('status', data.get('status'));
-      if (data.get('sort') === 'name') params.set('sort', 'name');
       navigate(`/waste-types${params.size ? `?${params}` : ''}`);
       return;
     }
@@ -509,6 +509,7 @@ function bindGlobalEvents() {
       if (form.elements.month) form.elements.month.disabled = custom;
       if (form.elements.from) form.elements.from.disabled = !custom;
       if (form.elements.to) form.elements.to.disabled = !custom;
+      syncThaiDateInputs(form);
     }
   });
 }
@@ -519,6 +520,7 @@ function bindGlobalEvents() {
 function bootstrap() {
   initToastContainer();
   initShell();
+  initThaiDatePickers(app);
   bindGlobalEvents();
 
   initRouter(routes, {

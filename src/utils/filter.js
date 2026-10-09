@@ -23,7 +23,9 @@ export function formatDateYmd(date) {
  * @returns {{ from: string, to: string }}
  */
 export function getQuickDateRange(preset) {
-  const now = new Date();
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+  const part = key => Number(parts.find(item => item.type === key).value);
+  const now = new Date(part('year'), part('month') - 1, part('day'));
   const today = formatDateYmd(now);
 
   switch (preset) {

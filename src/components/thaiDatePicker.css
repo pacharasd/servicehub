@@ -1,0 +1,8 @@
+.thai-date-field { position: relative; display: inline-flex; width: 100%; min-width: 0; max-width: 100%; align-items: center; }
+.thai-date-field > [data-thai-display] { width: 100%; min-width: 0; padding-right: 44px; }
+.thai-date-open { position: absolute; right: 2px; top: 50%; transform: translateY(-50%); width: 40px; min-height: 44px; color: #157d68; border-radius: 10px; }
+.thai-date-open:disabled { opacity: .5; cursor: default; }
+.thai-calendar { box-sizing: border-box; width: min(360px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; margin: auto; }
+.thai-calendar::backdrop { background: rgb(15 35 30 / .4); }
+.thai-calendar button:disabled { opacity: .35; cursor: default; }
+@media print { .thai-calendar { display: none; } }
