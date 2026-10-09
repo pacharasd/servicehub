@@ -87,8 +87,14 @@ class ServiceReportTest extends TestCase
         $this->assertSame('2026-09-26', $data['meta']['comparison']['from']);
         $this->assertSame(5, array_sum(array_column($data['data'], 'count')));
         $this->assertEquals(2, $data['data']['road-washings']['quantities']['distance_km'][0]['total']);
+        $this->assertSame('กิโลเมตร', $data['data']['road-washings']['quantities']['distance_km'][0]['unit']);
+        $this->assertSame('กิโลกรัม', $data['data']['waste-collections']['quantities']['weight'][0]['unit']);
+        $this->assertSame('ลูกบาศก์เมตร', $data['data']['drain-cleanings']['quantities']['sediment_quantity'][0]['unit']);
+        $this->assertSame('ลูกบาศก์เมตร', $data['data']['septic-pumpings']['quantities']['volume'][0]['unit']);
         $this->assertEquals(5, $data['data']['septic-treatments']['quantities']['sludge_quantity'][0]['total']);
+        $this->assertSame('กิโลกรัม', $data['data']['septic-treatments']['quantities']['sludge_quantity'][0]['unit']);
         $this->assertEquals(7, $data['data']['septic-treatments']['quantities']['fertilizer_remaining'][0]['total']);
+        $this->assertSame('กิโลกรัม', $data['data']['septic-treatments']['quantities']['fertilizer_remaining'][0]['unit']);
         $this->assertSame('latest', $data['data']['septic-treatments']['quantities']['fertilizer_remaining'][0]['kind']);
         $this->assertSame('2026-10-04', $data['data']['septic-treatments']['quantities']['fertilizer_remaining'][0]['as_of']);
         $this->assertEquals(2, $data['data']['waste-management-projects']['quantities']['communities_count'][0]['total']);
@@ -99,6 +105,7 @@ class ServiceReportTest extends TestCase
         $this->assertSame(1, $detail['count']);
         $this->assertSame(1, $detail['previous_count']);
         $this->assertSame(1, $detail['breakdown'][0]['count']);
+        $this->assertSame('กิโลเมตร', $detail['breakdown'][0]['unit']);
         $this->assertSame('ถนนหนึ่ง', $detail['recent'][0]['title']);
         $this->assertSame(1, array_sum(array_column($detail['trend'], 'count')));
     }
@@ -115,6 +122,12 @@ class ServiceReportTest extends TestCase
         $csvContent = $csvResponse->streamedContent();
         $this->assertStringStartsWith("\xEF\xBB\xBF", $csvContent);
         $this->assertStringContainsString('ช่วงเริ่ม,ช่วงสิ้นสุด,หมวดงาน,จำนวนรายการ', $csvContent);
+        foreach (['กิโลเมตร', 'กิโลกรัม', 'ลูกบาศก์เมตร'] as $unit) {
+            $this->assertStringContainsString($unit, $csvContent);
+        }
+        foreach (['กม.', 'กก.', 'ลบ.ม.'] as $abbreviation) {
+            $this->assertStringNotContainsString($abbreviation, $csvContent);
+        }
 
         $this->get('/api/reports/road-washings/export?from=2026-10-01&to=2026-10-05')->assertOk();
 

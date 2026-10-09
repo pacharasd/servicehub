@@ -102,11 +102,11 @@ class ServiceReports
                 continue;
             }
             $unit = match ($column) {
-                'distance_km' => $module === 'waterway-cleanings' ? 'กิโลเมตร' : 'กม.',
+                'distance_km' => 'กิโลเมตร',
                 'quantity' => 'ลูกบาศก์เมตร',
                 'weight' => 'กิโลกรัม',
-                'sediment_quantity', 'volume' => 'ลบ.ม.',
-                'sludge_quantity', 'fertilizer_remaining' => 'กก.',
+                'sediment_quantity', 'volume' => 'ลูกบาศก์เมตร',
+                'sludge_quantity', 'fertilizer_remaining' => 'กิโลกรัม',
                 'fee_amount' => 'บาท',
                 'communities_count' => 'ชุมชน',
                 'participants_count' => 'คน',
@@ -162,7 +162,7 @@ class ServiceReports
                     'name' => $row->name ?? 'ไม่พบข้อมูลอ้างอิง',
                     'count' => (int) $row->count,
                     'total' => (float) $row->total,
-                    'unit' => $metric === 'weight' ? 'กิโลกรัม' : 'กม.',
+                    'unit' => $metric === 'weight' ? 'กิโลกรัม' : 'กิโลเมตร',
                 ])->all();
         }
         $titleColumn = match ($module) {

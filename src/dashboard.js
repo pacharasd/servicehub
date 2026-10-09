@@ -1,9 +1,9 @@
 import { renderDatePresets } from './utils/filter.js';
 
 const metricUnits = {
-  distance_km: 'กม.', quantity: 'ลูกบาศก์เมตร', weight: 'กิโลกรัม', sediment_quantity: 'ลบ.ม.',
-  volume: 'ลบ.ม.', fee_amount: 'บาท', sludge_quantity: 'กก.',
-  fertilizer_remaining_latest: 'กก.', communities_count: 'ชุมชน', participants_count: 'คน',
+  distance_km: 'กิโลเมตร', quantity: 'ลูกบาศก์เมตร', weight: 'กิโลกรัม', sediment_quantity: 'ลูกบาศก์เมตร',
+  volume: 'ลูกบาศก์เมตร', fee_amount: 'บาท', sludge_quantity: 'กิโลกรัม',
+  fertilizer_remaining_latest: 'กิโลกรัม', communities_count: 'ชุมชน', participants_count: 'คน',
 };
 
 const metricNames = {
@@ -55,23 +55,23 @@ export function dashboardContent({ data, loading, error, params, groups, modules
   const summaryCard = (label, value, suffix, description, prominent = false) => `<div class="dashboard-card panel-shadow rounded-2xl border border-line bg-white ${prominent ? 'border-l-[3px] border-l-primary' : ''} p-4 sm:p-5"><p class="text-sm font-semibold text-[#4d655a]">${label}</p><p class="mt-3 text-3xl font-bold leading-tight text-ink">${number(value)} <span class="text-sm font-medium text-muted">${suffix}</span></p><p class="mt-1 text-xs text-muted">${description}</p></div>`;
   const metricText = (module, key, value) => {
     const label = metricNames[key] || module.fields.find(field => field.name === key)?.label || key;
-    return `<span class="inline-flex max-w-full flex-wrap gap-1 rounded-lg bg-[#f4f8f5] px-2.5 py-1.5 text-xs text-[#435b50]"><span>${esc(label)}:</span><strong class="text-ink">${value === null ? 'ไม่มีข้อมูล' : `${number(value)} ${module.fields.find(field => field.name === key)?.unit || metricUnits[key] || ''}`}</strong></span>`;
+    return `<span class="inline-flex max-w-full flex-wrap gap-1 rounded-lg bg-[#f4f8f5] px-2.5 py-1.5 text-xs text-[#435b50]"><span>${esc(label)}:</span><strong class="min-w-0 break-words text-ink">${value === null ? 'ไม่มีข้อมูล' : `${number(value)} ${module.fields.find(field => field.name === key)?.unit || metricUnits[key] || ''}`}</strong></span>`;
   };
   const metricValue = (id, key) => data.module_summary[id]?.metrics[key] ?? 0;
   const groupMetrics = {
     cleaning: [
-      ['ระยะทางดำเนินงานรวม', visibleModules.filter(m => m.group === 'cleaning').reduce((sum, m) => sum + metricValue(m.id, 'distance_km'), 0), 'กม.'],
+      ['ระยะทางดำเนินงานรวม', visibleModules.filter(m => m.group === 'cleaning').reduce((sum, m) => sum + metricValue(m.id, 'distance_km'), 0), 'กิโลเมตร'],
       ...(visible('waterway-cleanings') ? [['ผักตบชวาและมูลฝอยที่กำจัด', metricValue('waterway-cleanings', 'quantity'), 'ลูกบาศก์เมตร']] : []),
     ],
     waste: [['น้ำหนักมูลฝอย', metricValue('waste-collections', 'weight'), 'กิโลกรัม']],
     sanitation: [
-      ...(visible('drain-cleanings') ? [['ตะกอนจากงานลอกท่อ', metricValue('drain-cleanings', 'sediment_quantity'), 'ลบ.ม.']] : []),
-      ...(visible('septic-pumpings') ? [['สิ่งปฏิกูลที่สูบ', metricValue('septic-pumpings', 'volume'), 'ลบ.ม.']] : []),
-      ...(visible('septic-treatments') ? [['ตะกอนสำหรับทำปุ๋ย', metricValue('septic-treatments', 'sludge_quantity'), 'กก.']] : []),
+      ...(visible('drain-cleanings') ? [['ตะกอนจากงานลอกท่อ', metricValue('drain-cleanings', 'sediment_quantity'), 'ลูกบาศก์เมตร']] : []),
+      ...(visible('septic-pumpings') ? [['สิ่งปฏิกูลที่สูบ', metricValue('septic-pumpings', 'volume'), 'ลูกบาศก์เมตร']] : []),
+      ...(visible('septic-treatments') ? [['ตะกอนสำหรับทำปุ๋ย', metricValue('septic-treatments', 'sludge_quantity'), 'กิโลกรัม']] : []),
     ],
     projects: [['ผู้เข้าร่วมโครงการ', metricValue('waste-management-projects', 'participants_count'), 'คน']],
   };
-  const groupCards = groups.filter(group => visibleModules.some(m => m.group === group.id)).map(group => `<section class="dashboard-card panel-shadow rounded-2xl border border-line bg-white p-4 sm:p-5"><div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eaf5ef] text-primary">${icon(group.icon, 19)}</span><div class="min-w-0"><h3 class="break-words text-sm font-bold text-ink">${esc(group.label)}</h3><p class="mt-1 text-2xl font-bold text-ink">${number(data.group_summary[group.id] || 0)} <span class="text-xs font-medium text-muted">${isFiltered ? 'รายการในช่วงที่เลือก' : 'รายการสะสม'}</span></p></div></div><dl class="mt-4 space-y-1.5 border-t border-line pt-3">${groupMetrics[group.id].map(([label, value, unit]) => `<div class="flex flex-wrap justify-between gap-x-2 text-xs"><dt class="text-muted">${label}</dt><dd class="font-bold text-ink">${number(value)} ${unit}</dd></div>`).join('')}</dl></section>`).join('');
+  const groupCards = groups.filter(group => visibleModules.some(m => m.group === group.id)).map(group => `<section class="dashboard-card panel-shadow rounded-2xl border border-line bg-white p-4 sm:p-5"><div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eaf5ef] text-primary">${icon(group.icon, 19)}</span><div class="min-w-0"><h3 class="break-words text-sm font-bold text-ink">${esc(group.label)}</h3><p class="mt-1 text-2xl font-bold text-ink">${number(data.group_summary[group.id] || 0)} <span class="text-xs font-medium text-muted">${isFiltered ? 'รายการในช่วงที่เลือก' : 'รายการสะสม'}</span></p></div></div><dl class="mt-4 space-y-1.5 border-t border-line pt-3">${groupMetrics[group.id].map(([label, value, unit]) => `<div class="flex flex-wrap justify-between gap-x-2 text-xs"><dt class="text-muted">${label}</dt><dd class="min-w-0 break-words font-bold text-ink">${number(value)} ${unit}</dd></div>`).join('')}</dl></section>`).join('');
   const moduleCards = visibleModules.map(module => {
     const item = data.module_summary[module.id];
     return `<a href="${periodLink(module.id)}" class="flex min-w-0 flex-col gap-2 rounded-xl border border-line bg-white p-3.5 transition hover:border-[#9fd1b8] hover:bg-[#f9fcfa] focus-visible:outline"><span class="flex min-w-0 items-start justify-between gap-2"><span class="min-w-0 break-words text-sm font-semibold text-ink">${esc(module.short)}</span><strong class="shrink-0 text-sm text-primary">${number(item.count)} รายการ</strong></span><span class="flex flex-wrap gap-1.5">${Object.entries(item.metrics).map(([key, value]) => metricText(module, key, value)).join('') || '<span class="text-xs text-muted">ไม่มีค่าปริมาณ</span>'}</span></a>`;

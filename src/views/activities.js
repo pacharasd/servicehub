@@ -159,7 +159,7 @@ export function listPage({ module, group, params, records = activityRecords, ref
   const pages = Math.max(1, Number(meta?.last_page) || Math.ceil(total / pageSize) || 1);
   const safePage = Math.min(pages, Math.max(1, Number(meta?.current_page ?? params.get('page')) || 1));
   const visible = records;
-  const shownFields = module.fields.filter((f) => f.name !== 'service_date').slice(0, 3);
+  const shownFields = module.fields.filter((f) => f.name !== 'service_date').slice(0, module.id === 'waste-collections' ? 4 : 3);
 
   const buildPage = (next) => {
     const nextParams = new URLSearchParams(params);
@@ -273,7 +273,7 @@ export function listPage({ module, group, params, records = activityRecords, ref
           <thead class="bg-[#f9fbf9] text-xs font-semibold text-muted">
             <tr>
               <th scope="col" class="px-5 py-3.5 whitespace-nowrap">${module.id === 'waste-collections' ? 'วันเริ่ม' : 'วันที่ดำเนินงาน'}</th>
-              ${shownFields.map((f) => `<th scope="col" class="px-5 py-3.5 whitespace-nowrap">${esc(f.label)}</th>`).join('')}
+              ${shownFields.map((f) => `<th scope="col" class="px-5 py-3.5 whitespace-nowrap ${module.id === 'waste-collections' && f.name === 'weight' ? 'text-right' : ''}">${esc(f.label)}</th>`).join('')}
               <th scope="col" class="px-5 py-3.5 whitespace-nowrap">ผู้บันทึก</th>
               <th scope="col" class="px-5 py-3.5 whitespace-nowrap text-right">ดูข้อมูล</th>
             </tr>
@@ -282,7 +282,7 @@ export function listPage({ module, group, params, records = activityRecords, ref
             ${visible.map((r) => `
               <tr class="transition hover:bg-[#fafcfa]">
                 <td class="whitespace-nowrap px-5 py-3.5 font-semibold text-ink">${thaiDate(r.service_date)}</td>
-                ${shownFields.map((f) => `<td class="max-w-[240px] truncate px-5 py-3.5 text-[#53675e]">${formatField(f, r[f.name], references)}</td>`).join('')}
+                ${shownFields.map((f) => `<td class="max-w-[240px] ${['number', 'integer'].includes(f.type) ? 'whitespace-normal break-words' : 'truncate'} ${module.id === 'waste-collections' && f.name === 'weight' ? 'text-right' : ''} px-5 py-3.5 text-[#53675e]">${formatField(f, r[f.name], references)}</td>`).join('')}
                 <td class="whitespace-nowrap px-5 py-3.5 text-muted">${esc(r.created_by)}</td>
                 <td class="whitespace-nowrap px-5 py-3.5 text-right">
                   <a href="#/module/${module.id}/${encodeURIComponent(r.id)}" class="inline-flex items-center gap-1 font-bold text-primary hover:underline">
