@@ -232,7 +232,6 @@ resources/
 - วันที่สิ้นสุด (`end_date`, ต้องไม่ก่อนวันเริ่ม)
 - แหล่งที่เก็บ
 - ประเภทขยะมูลฝอย
-- ชื่อขยะมูลฝอย
 - น้ำหนัก (กิโลกรัม)
 
 ชื่อโมดูลภายในแนะนำ: `waste_collections`
@@ -1189,7 +1188,6 @@ Schema::create('waste_collections', function (Blueprint $table) {
     $table->date('service_date')->index();
     $table->foreignId('location_id')->nullable()->constrained()->nullOnDelete();
     $table->foreignId('waste_type_id')->nullable()->constrained()->nullOnDelete();
-    $table->string('waste_name', 255);
     $table->decimal('weight_kg', 12, 2)->nullable();
     $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
     $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();

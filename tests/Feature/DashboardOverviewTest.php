@@ -111,7 +111,7 @@ class DashboardOverviewTest extends TestCase
         $wasteType = DB::table('waste_types')->value('id');
         $this->add('road_washings', ['cleaning_zone_id' => $zone, 'location' => 'ถนนหนึ่ง', 'distance_km' => 2.5], '2026-10-02');
         $this->add('waterway_cleanings', ['waterway_name' => 'คลองหนึ่ง', 'distance_km' => 1, 'quantity' => 3], '2026-10-03');
-        $this->add('waste_collections', ['source' => 'จุดหนึ่ง', 'waste_type_id' => $wasteType, 'waste_name' => 'ขยะทั่วไป', 'weight' => 4], '2026-10-04');
+        $this->add('waste_collections', ['source' => 'จุดหนึ่ง', 'waste_type_id' => $wasteType, 'weight' => 4], '2026-10-04');
         $this->add('drain_cleanings', ['location' => 'ท่อหนึ่ง', 'distance_km' => 1, 'sediment_quantity' => 2]);
         $this->add('septic_pumpings', ['location' => 'บ้านหนึ่ง', 'volume' => 3, 'fee_amount' => 40]);
         $this->add('septic_treatments', ['sludge_quantity' => 2, 'fertilizer_remaining' => 12, 'microbial_note' => 'ครั้งแรก'], '2026-10-01');

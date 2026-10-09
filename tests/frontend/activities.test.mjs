@@ -189,12 +189,13 @@ test('waste form requires a valid end date and uses kilograms', () => {
   assert.match(html, /วันเริ่ม/);
   assert.match(html, /name="end_date"[^>]*value=""/);
   assert.match(html, /กิโลกรัม/);
+  assert.doesNotMatch(html, /waste_name|ชื่อขยะมูลฝอย/);
   const NativeFormData = globalThis.FormData;
   globalThis.FormData = class {
     constructor(values) { return Object.entries(values); }
   };
   try {
-    const data = { service_date: '2026-09-30', end_date: '2026-10-02', source: 'จุดเก็บ', waste_type_id: '1', waste_name: 'ขยะ', weight: '12.345' };
+    const data = { service_date: '2026-09-30', end_date: '2026-10-02', source: 'จุดเก็บ', waste_type_id: '1', weight: '12.345' };
     const refs = { 'waste-types': [{ id: 1, is_active: true }] };
     assert.deepEqual(validateForm(data, module, refs).errors, {});
     for (const end of ['', '2026-09-29', '2026-02-30', 'invalid']) {

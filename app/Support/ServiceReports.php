@@ -102,8 +102,8 @@ class ServiceReports
                 continue;
             }
             $unit = match ($column) {
-                'distance_km' => 'กม.',
-                'quantity' => 'ตัน',
+                'distance_km' => $module === 'waterway-cleanings' ? 'กิโลเมตร' : 'กม.',
+                'quantity' => 'ลูกบาศก์เมตร',
                 'weight' => 'กิโลกรัม',
                 'sediment_quantity', 'volume' => 'ลบ.ม.',
                 'sludge_quantity', 'fertilizer_remaining' => 'กก.',
@@ -168,7 +168,7 @@ class ServiceReports
         $titleColumn = match ($module) {
             'waterway-cleanings' => 'waterway_name',
             'road-sweepings' => 'road',
-            'waste-collections' => 'waste_name',
+            'waste-collections' => 'source',
             'waste-management-projects' => 'project_name',
             'septic-treatments' => 'service_date',
             default => 'location',

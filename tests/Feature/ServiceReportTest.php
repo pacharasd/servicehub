@@ -76,7 +76,7 @@ class ServiceReportTest extends TestCase
         $this->add('road_washings', '2026-09-28', ['cleaning_zone_id' => $zone, 'location' => 'เดือนก่อน', 'distance_km' => 3]);
         $deleted = $this->add('road_washings', '2026-10-03', ['cleaning_zone_id' => $zone, 'location' => 'ลบแล้ว', 'distance_km' => 99]);
         DB::table('road_washings')->where('id', $deleted)->update(['deleted_at' => now()]);
-        $this->add('waste_collections', '2026-10-03', ['source' => 'จุดหนึ่ง', 'waste_type_id' => $wasteType, 'waste_name' => 'ขยะ', 'weight' => 4]);
+        $this->add('waste_collections', '2026-10-03', ['source' => 'จุดหนึ่ง', 'waste_type_id' => $wasteType, 'weight' => 4]);
         $this->add('septic_treatments', '2026-10-01', ['sludge_quantity' => 2, 'fertilizer_remaining' => 12, 'microbial_note' => 'ครั้งแรก']);
         $this->add('septic_treatments', '2026-10-04', ['sludge_quantity' => 3, 'fertilizer_remaining' => 7, 'microbial_note' => 'ครั้งหลัง']);
         $this->add('waste_management_projects', '2026-10-05', ['project_name' => 'โครงการหนึ่ง', 'communities_count' => 2, 'participants_count' => 9]);

@@ -41,7 +41,7 @@ class LiveServiceApiTest extends TestCase
             'waterway-cleanings' => ['waterway_name' => 'คลองทดสอบ', 'distance_km' => 2, 'quantity' => 3],
             'road-sweepings' => ['road' => 'ถนนทดสอบ', 'distance_km' => 2],
             'outsourced-cleanings' => ['location' => 'จุดทดสอบ', 'distance_km' => 2, 'community' => 'ชุมชนทดสอบ'],
-            'waste-collections' => ['end_date' => '2026-09-29', 'source' => 'แหล่งเก็บ 1', 'waste_type_id' => $waste, 'waste_name' => 'ขยะทดสอบ', 'weight' => 3],
+            'waste-collections' => ['end_date' => '2026-09-29', 'source' => 'แหล่งเก็บ 1', 'waste_type_id' => $waste, 'weight' => 3],
             'drain-cleanings' => ['location' => 'จุดท่อทดสอบ', 'distance_km' => 2, 'sediment_quantity' => 3],
             'septic-pumpings' => ['location' => 'บ้านเลขที่ 123', 'volume' => 3, 'fee_amount' => 10],
             'septic-treatments' => ['sludge_quantity' => 3, 'fertilizer_remaining' => 4, 'microbial_note' => 'ทดสอบ'],
@@ -103,7 +103,7 @@ class LiveServiceApiTest extends TestCase
         $migration->down();
         $id = DB::table('waste_collections')->insertGetId([
             'service_date' => '2026-09-30', 'source' => 'จุดเดิม',
-            'waste_type_id' => $this->reference('waste_types'), 'waste_name' => 'ขยะเดิม', 'weight' => 12.345,
+            'waste_type_id' => $this->reference('waste_types'), 'weight' => 12.345,
             'created_by' => $user->id, 'deleted_at' => now(),
         ]);
         $migration->up();
@@ -111,18 +111,39 @@ class LiveServiceApiTest extends TestCase
         $this->assertDatabaseHas('waste_collections', ['id' => $id, 'service_date' => '2026-09-30', 'end_date' => '2026-09-30', 'weight' => 12.345]);
     }
 
+    public function test_waste_name_removal_preserves_existing_record_and_handles_manual_removal(): void
+    {
+        $this->administrator();
+        Schema::table('waste_collections', function (Blueprint $table) {
+            $table->string('waste_name', 255)->nullable();
+        });
+        $body = ['service_date' => '2026-09-30', 'end_date' => '2026-10-02', 'source' => 'แหล่งเดิม', 'waste_type_id' => $this->reference('waste_types'), 'weight' => 12.345];
+        $id = DB::table('waste_collections')->insertGetId([...$body, 'waste_name' => 'ชื่อเดิม']);
+        $migration = require database_path('migrations/2026_10_09_000001_remove_waste_name_from_waste_collections.php');
+        $migration->up();
+        $migration->up();
+        $this->assertFalse(Schema::hasColumn('waste_collections', 'waste_name'));
+        $this->assertDatabaseHas('waste_collections', ['id' => $id, ...$body]);
+    }
+
     public function test_waste_dates_units_and_cross_month_reporting(): void
     {
         $user = $this->administrator();
         $this->withSession(['auth_version' => $user->auth_version ?? 0])->actingAs($user, 'web');
-        $body = ['service_date' => '2026-09-30', 'end_date' => '2026-10-02', 'source' => 'จุดเก็บ', 'waste_type_id' => $this->reference('waste_types'), 'waste_name' => 'ขยะ', 'weight' => 12.345];
+        $body = ['service_date' => '2026-09-30', 'end_date' => '2026-10-02', 'source' => 'จุดเก็บ', 'waste_type_id' => $this->reference('waste_types'), 'weight' => 12.345];
         foreach (['', '2026-09-29', '2026-02-30', 'invalid'] as $end) {
             $this->postJson('/api/activities/waste-collections', [...$body, 'end_date' => $end])
                 ->assertUnprocessable()->assertJsonValidationErrors('end_date');
         }
         $id = $this->postJson('/api/activities/waste-collections', $body)->assertCreated()->json('data.id');
-        $this->getJson('/api/activities/waste-collections/'.$id)->assertOk()->assertJsonPath('data.end_date', '2026-10-02');
+        $this->getJson('/api/activities/waste-collections/'.$id)->assertOk()->assertJsonPath('data.end_date', '2026-10-02')->assertJsonMissingPath('data.waste_name');
         $this->getJson('/api/activities/waste-collections?q='.urlencode('จุดเก็บ').'&from=2026-09-30&to=2026-09-30')->assertOk()->assertJsonPath('meta.total', 1);
+        $typeName = DB::table('waste_types')->where('id', $body['waste_type_id'])->value('name');
+        $this->getJson('/api/activities/waste-collections?q='.urlencode($typeName))->assertOk()->assertJsonPath('meta.total', 1);
+        $this->getJson('/api/dashboard?from=2026-09-01&to=2026-09-30')->assertOk()
+            ->assertJsonPath('data.total', 1)->assertJsonPath('data.recent.0.title', $body['source']);
+        $this->getJson('/api/reports/waste-collections?from=2026-09-01&to=2026-09-30')->assertOk()
+            ->assertJsonPath('data.recent.0.title', $body['source']);
         $this->getJson('/api/activities/waste-collections?from=2026-10-01&to=2026-10-31')->assertOk()->assertJsonPath('meta.total', 0);
         $this->getJson('/api/reports?from=2026-09-01&to=2026-09-30')->assertOk()
             ->assertJsonPath('data.waste-collections.count', 1)
@@ -132,6 +153,7 @@ class LiveServiceApiTest extends TestCase
         $csv = $this->get('/api/activities/waste-collections/export')->assertOk()->streamedContent();
         $this->assertStringContainsString('end_date', $csv);
         $this->assertStringContainsString('weight_kg', $csv);
+        $this->assertStringNotContainsString('waste_name', $csv);
         $this->putJson('/api/activities/waste-collections/'.$id, [...$body, 'end_date' => '2026-09-30'])->assertOk();
     }
 
@@ -185,7 +207,6 @@ class LiveServiceApiTest extends TestCase
             'end_date' => '2026-10-05',
             'source' => 'จุดเก็บ',
             'waste_type_id' => $wasteType,
-            'waste_name' => 'ขยะทั่วไป',
             'weight' => 1,
             'created_at' => now(),
             'updated_at' => now(),
@@ -206,7 +227,7 @@ class LiveServiceApiTest extends TestCase
 
         foreach ([
             ['cleaning-zones', $zone, 'road-washings', ['cleaning_zone_id' => $zone, 'location' => 'ถนนทดสอบ', 'distance_km' => 1]],
-            ['waste-types', $wasteType, 'waste-collections', ['end_date' => '2026-10-05', 'source' => 'จุดเก็บ', 'waste_type_id' => $wasteType, 'waste_name' => 'ขยะทดสอบ', 'weight' => 1]],
+            ['waste-types', $wasteType, 'waste-collections', ['end_date' => '2026-10-05', 'source' => 'จุดเก็บ', 'waste_type_id' => $wasteType, 'weight' => 1]],
         ] as [$type, $referenceId, $module, $fields]) {
             $id = $this->postJson('/api/activities/'.$module, ['service_date' => '2026-10-05', ...$fields])
                 ->assertCreated()->json('data.id');

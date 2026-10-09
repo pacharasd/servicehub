@@ -107,7 +107,7 @@ class ServiceOverviewController extends Controller
             $titleColumn = match ($module) {
                 'waterway-cleanings' => 'waterway_name',
                 'road-sweepings' => 'road',
-                'waste-collections' => 'waste_name',
+                'waste-collections' => 'source',
                 'waste-management-projects' => 'project_name',
                 'septic-treatments' => 'service_date',
                 default => 'location',

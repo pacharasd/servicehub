@@ -1,7 +1,7 @@
 import { renderDatePresets } from './utils/filter.js';
 
 const metricUnits = {
-  distance_km: 'กม.', quantity: 'ตัน', weight: 'กิโลกรัม', sediment_quantity: 'ลบ.ม.',
+  distance_km: 'กม.', quantity: 'ลูกบาศก์เมตร', weight: 'กิโลกรัม', sediment_quantity: 'ลบ.ม.',
   volume: 'ลบ.ม.', fee_amount: 'บาท', sludge_quantity: 'กก.',
   fertilizer_remaining_latest: 'กก.', communities_count: 'ชุมชน', participants_count: 'คน',
 };
@@ -55,13 +55,13 @@ export function dashboardContent({ data, loading, error, params, groups, modules
   const summaryCard = (label, value, suffix, description, prominent = false) => `<div class="dashboard-card panel-shadow rounded-2xl border border-line bg-white ${prominent ? 'border-l-[3px] border-l-primary' : ''} p-4 sm:p-5"><p class="text-sm font-semibold text-[#4d655a]">${label}</p><p class="mt-3 text-3xl font-bold leading-tight text-ink">${number(value)} <span class="text-sm font-medium text-muted">${suffix}</span></p><p class="mt-1 text-xs text-muted">${description}</p></div>`;
   const metricText = (module, key, value) => {
     const label = metricNames[key] || module.fields.find(field => field.name === key)?.label || key;
-    return `<span class="inline-flex max-w-full flex-wrap gap-1 rounded-lg bg-[#f4f8f5] px-2.5 py-1.5 text-xs text-[#435b50]"><span>${esc(label)}:</span><strong class="text-ink">${value === null ? 'ไม่มีข้อมูล' : `${number(value)} ${metricUnits[key] || ''}`}</strong></span>`;
+    return `<span class="inline-flex max-w-full flex-wrap gap-1 rounded-lg bg-[#f4f8f5] px-2.5 py-1.5 text-xs text-[#435b50]"><span>${esc(label)}:</span><strong class="text-ink">${value === null ? 'ไม่มีข้อมูล' : `${number(value)} ${module.fields.find(field => field.name === key)?.unit || metricUnits[key] || ''}`}</strong></span>`;
   };
   const metricValue = (id, key) => data.module_summary[id]?.metrics[key] ?? 0;
   const groupMetrics = {
     cleaning: [
       ['ระยะทางดำเนินงานรวม', visibleModules.filter(m => m.group === 'cleaning').reduce((sum, m) => sum + metricValue(m.id, 'distance_km'), 0), 'กม.'],
-      ...(visible('waterway-cleanings') ? [['ผักตบชวาและมูลฝอยที่กำจัด', metricValue('waterway-cleanings', 'quantity'), 'ตัน']] : []),
+      ...(visible('waterway-cleanings') ? [['ผักตบชวาและมูลฝอยที่กำจัด', metricValue('waterway-cleanings', 'quantity'), 'ลูกบาศก์เมตร']] : []),
     ],
     waste: [['น้ำหนักมูลฝอย', metricValue('waste-collections', 'weight'), 'กิโลกรัม']],
     sanitation: [
