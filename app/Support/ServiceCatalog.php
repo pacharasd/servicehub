@@ -16,7 +16,7 @@ class ServiceCatalog
         'waterway-cleanings' => ['table' => 'waterway_cleanings',      'group' => 'cleaning',   'fields' => ['end_date' => 'date', 'waterway_name' => 255, 'distance_km' => 'decimal', 'quantity' => 'decimal']],
         'road-sweepings' => ['table' => 'road_sweepings',          'group' => 'cleaning',   'fields' => ['road' => 255, 'distance_km' => 'decimal']],
         'outsourced-cleanings' => ['table' => 'outsourced_cleanings',    'group' => 'cleaning',   'fields' => ['location' => 500, 'distance_km' => 'decimal', 'community' => 255]],
-        'waste-collections' => ['table' => 'waste_collections',       'group' => 'waste',      'fields' => ['end_date' => 'date', 'source' => 500, 'waste_type_id' => 'waste_types', 'weight' => 'decimal']],
+        'waste-collections' => ['table' => 'waste_collections',       'group' => 'waste',      'fields' => ['end_date' => 'date', 'source' => 500, 'waste_type_id' => 'waste_types', 'weight' => 'decimal', 'hazardous_waste_name' => 255]],
         'drain-cleanings' => ['table' => 'drain_cleanings',         'group' => 'sanitation', 'fields' => ['location' => 500, 'distance_km' => 'decimal', 'sediment_quantity' => 'decimal']],
         'septic-pumpings' => ['table' => 'septic_pumpings',         'group' => 'sanitation', 'fields' => ['location' => 500, 'volume' => 'decimal', 'fee_amount' => 'decimal']],
         'septic-treatments' => ['table' => 'septic_treatments',       'group' => 'sanitation', 'fields' => ['sludge_quantity' => 'decimal', 'fertilizer_remaining' => 'decimal', 'microbial_note' => 'text']],

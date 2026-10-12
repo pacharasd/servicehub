@@ -9,6 +9,16 @@ use Illuminate\Validation\Rule;
 
 class SaveServiceRecordRequest extends FormRequest
 {
+    protected function prepareForValidation(): void
+    {
+        if ($this->route('module') === 'waste-collections') {
+            $typeId = $this->input('waste_type_id');
+            $hazardous = is_scalar($typeId) && filter_var($typeId, FILTER_VALIDATE_INT) !== false
+                && DB::table('waste_types')->where('id', $typeId)->where('code', 'WASTE-004')->exists();
+            $this->merge(['hazardous_waste_name' => $hazardous ? $this->input('hazardous_waste_name') : null]);
+        }
+    }
+
     public function authorize(): bool
     {
         $module = (string) $this->route('module');
@@ -21,6 +31,9 @@ class SaveServiceRecordRequest extends FormRequest
     {
         $module = (string) $this->route('module');
         $rules = ServiceCatalog::activityRules($module);
+        if ($module === 'waste-collections') {
+            $rules['hazardous_waste_name'] = ['nullable', 'string', 'max:255'];
+        }
         if (! $this->route('record')) {
             return $rules;
         }

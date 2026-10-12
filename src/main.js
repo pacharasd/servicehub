@@ -30,6 +30,7 @@ import {
   renderActivitiesView,
   deleteActivity,
   submitActivity,
+  syncHazardousWasteInput,
 } from './views/activities.js';
 import {
   renderReferencesView,
@@ -493,6 +494,9 @@ function bindGlobalEvents() {
   });
 
   document.addEventListener('change', (e) => {
+    if (e.target.name === 'waste_type_id' && e.target.closest('#record-form')) {
+      syncHazardousWasteInput(e.target.form);
+    }
     if (e.target.dataset.action === 'live-filter') {
       const form = e.target.form;
       if (form) {

@@ -193,8 +193,30 @@ class LiveServiceApiTest extends TestCase
         $csv = $this->get('/api/activities/waste-collections/export')->assertOk()->streamedContent();
         $this->assertStringContainsString('end_date', $csv);
         $this->assertStringContainsString('weight_kg', $csv);
-        $this->assertStringNotContainsString('waste_name', $csv);
+        $this->assertStringNotContainsString(',waste_name,', $csv);
         $this->putJson('/api/activities/waste-collections/'.$id, [...$body, 'end_date' => '2026-09-30'])->assertOk();
+    }
+
+    public function test_optional_hazardous_name_is_scoped_by_type_code(): void
+    {
+        $user = $this->administrator();
+        $this->withSession(['auth_version' => $user->auth_version ?? 0])->actingAs($user, 'web');
+        $hazard = DB::table('waste_types')->where('code', 'WASTE-004')->value('id');
+        $other = DB::table('waste_types')->insertGetId(['code' => '2.2.2', 'name' => 'มูลฝอยอันตรายและซากอิเล็กทรอนิกส์', 'is_active' => true]);
+        $body = ['service_date' => '2026-10-12', 'end_date' => '2026-10-12', 'source' => 'จุดเก็บ', 'waste_type_id' => $hazard, 'weight' => 3.8];
+        $id = $this->postJson('/api/activities/waste-collections', $body)->assertCreated()->assertJsonPath('data.hazardous_waste_name', null)->json('data.id');
+        $this->putJson('/api/activities/waste-collections/'.$id, [...$body, 'hazardous_waste_name' => 'ถ่านไฟฉาย'])->assertOk()->assertJsonPath('data.hazardous_waste_name', 'ถ่านไฟฉาย');
+        $this->getJson('/api/activities/waste-collections/'.$id)->assertOk()->assertJsonPath('data.hazardous_waste_name', 'ถ่านไฟฉาย');
+        $this->getJson('/api/activities/waste-collections?q='.urlencode('ถ่านไฟฉาย'))->assertOk()->assertJsonPath('meta.total', 1);
+        $csv = $this->get('/api/activities/waste-collections/export')->assertOk()->streamedContent();
+        $this->assertStringContainsString('hazardous_waste_name', $csv);
+        $this->assertStringContainsString('ถ่านไฟฉาย', $csv);
+        $this->putJson('/api/activities/waste-collections/'.$id, [...$body, 'hazardous_waste_name' => str_repeat('ก', 256)])->assertUnprocessable()->assertJsonValidationErrors('hazardous_waste_name');
+        $this->putJson('/api/activities/waste-collections/'.$id, [...$body, 'hazardous_waste_name' => ['invalid']])->assertUnprocessable()->assertJsonValidationErrors('hazardous_waste_name');
+        $this->putJson('/api/activities/waste-collections/'.$id, [...$body, 'waste_type_id' => $other, 'hazardous_waste_name' => 'ข้อมูลเก่า'])->assertOk()->assertJsonPath('data.hazardous_waste_name', null);
+        $this->putJson('/api/activities/waste-collections/'.$id, [...$body, 'hazardous_waste_name' => ''])->assertOk()->assertJsonPath('data.hazardous_waste_name', null);
+        $this->assertDatabaseHas('waste_collections', ['id' => $id, 'weight' => 3.8]);
+        $this->assertDatabaseHas('audit_logs', ['subject_id' => $id, 'action' => 'waste-collections.updated']);
     }
 
     public function test_reference_cannot_be_deleted_while_used(): void

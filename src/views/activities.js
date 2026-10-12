@@ -78,6 +78,26 @@ export function formatField(field, value, references = activityReferences) {
   return esc(value);
 }
 
+function isHazardousWaste(typeId, references) {
+  return references['waste-types']?.some(item => String(item.id) === String(typeId) && item.code === 'WASTE-004') || false;
+}
+
+export function syncHazardousWasteInput(form) {
+  if (form?.dataset.module !== 'waste-collections') return;
+  const select = form.elements.waste_type_id;
+  const wrapper = form.querySelector('[data-hazardous-waste-field]');
+  const input = form.elements.hazardous_waste_name;
+  if (!wrapper || !input) return;
+  const visible = select?.selectedOptions[0]?.dataset.code === 'WASTE-004';
+  wrapper.hidden = !visible;
+  input.disabled = !visible;
+  if (!visible) {
+    input.value = '';
+    input.removeAttribute('aria-invalid');
+    form.querySelector('#field-hazardous_waste_name-help').textContent = '';
+  }
+}
+
 export function fieldInput(field, value = '', error = '', references = activityReferences) {
   const id = `field-${field.name}`;
   const common = `id="${id}" name="${field.name}" class="field" ${field.required ? 'required' : ''} ${error ? 'aria-invalid="true"' : ''} aria-describedby="${id}-help"`;
@@ -90,7 +110,7 @@ export function fieldInput(field, value = '', error = '', references = activityR
       <select ${common}>
         <option value="" disabled ${!value ? 'selected' : ''}>เลือก${esc(field.label)}</option>
         ${(references[field.reference] || []).filter((item) => item.is_active || String(item.id) === String(value)).map((item) => `
-          <option value="${esc(item.id)}" ${String(value) === String(item.id) ? 'selected' : ''}>
+          <option value="${esc(item.id)}" data-code="${esc(item.code || '')}" ${String(value) === String(item.id) ? 'selected' : ''}>
             ${esc(item.name)}${item.symbol ? ` (${esc(item.symbol)})` : ''}
           </option>
         `).join('')}
@@ -127,10 +147,16 @@ export function validateForm(form, module, references = activityReferences) {
   const errors = {};
 
   module.fields.forEach((field) => {
+    if (field.wasteTypeCode && !isHazardousWaste(data.waste_type_id, references)) {
+      data[field.name] = null;
+      return;
+    }
     const value = String(data[field.name] ?? '').trim();
     data[field.name] = value;
     if (field.required && !value) {
       errors[field.name] = `กรุณาระบุ${field.label}`;
+    } else if (field.wasteTypeCode && [...value].length > 255) {
+      errors[field.name] = 'ชื่อขยะอันตรายต้องไม่เกิน 255 ตัวอักษร';
     } else if (value && (field.type === 'number' || field.type === 'integer')) {
       const num = Number(value);
       if (!Number.isFinite(num) || num < 0 || (field.type === 'integer' && !Number.isInteger(num))) {
@@ -344,7 +370,7 @@ export function detailPage({ module, group, record, references = activityReferen
           <h2 class="font-bold">ข้อมูลการดำเนินงาน</h2>
         </div>
         <dl class="grid min-w-0 grid-cols-1 gap-x-8 gap-y-0 p-5 sm:grid-cols-2 sm:p-7">
-          ${module.fields.map((f) => `
+          ${module.fields.filter(f => !f.wasteTypeCode || isHazardousWaste(record.waste_type_id, references)).map((f) => `
             <div class="border-b border-[#edf1ed] py-4">
               <dt class="text-xs font-semibold text-muted">${esc(f.label)}</dt>
               <dd class="mt-1.5 break-words text-sm font-bold text-ink">${formatField(f, record[f.name], references)}</dd>
@@ -393,7 +419,14 @@ export function formPage({ module, group, record = null, errors = {}, values = n
       </div>
       <form id="record-form" data-module="${module.id}" data-id="${record ? esc(record.id) : ''}" novalidate class="p-5 sm:p-7">
         <div class="grid min-w-0 grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-          ${module.fields.map((f) => fieldInput(f, data[f.name] ?? '', errors[f.name], references)).join('')}
+          ${module.fields.map((f) => {
+            const rendered = fieldInput(f, data[f.name] ?? '', errors[f.name], references);
+            if (!f.wasteTypeCode) return rendered;
+            const visible = isHazardousWaste(data.waste_type_id, references);
+            const nameInput = fieldInput(f, visible ? data.hazardous_waste_name ?? '' : '', errors.hazardous_waste_name, references)
+              .replace('name="hazardous_waste_name"', `name="hazardous_waste_name" ${visible ? '' : 'disabled'}`);
+            return `<div class="min-w-0" data-hazardous-waste-field ${visible ? '' : 'hidden'}>${nameInput}</div>`;
+          }).join('')}
         </div>
         <div class="mt-7 flex flex-col-reverse gap-3 border-t border-line pt-6 sm:flex-row sm:justify-end">
           <a href="${record ? `#/module/${module.id}/${encodeURIComponent(record.id)}` : `#/module/${module.id}`}" class="inline-flex min-h-11 items-center justify-center rounded-xl border border-line px-5 text-sm font-bold text-[#566a60] hover:bg-canvas">

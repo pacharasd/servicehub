@@ -213,7 +213,7 @@ test('waste form requires a valid end date and uses kilograms', () => {
   assert.match(html, /วันเริ่ม/);
   assert.match(html, /name="end_date"[^>]*value=""/);
   assert.match(html, /กิโลกรัม/);
-  assert.doesNotMatch(html, /waste_name|ชื่อขยะมูลฝอย/);
+  assert.doesNotMatch(html, /name="waste_name"|ชื่อขยะมูลฝอย/);
   const NativeFormData = globalThis.FormData;
   globalThis.FormData = class {
     constructor(values) { return Object.entries(values); }
