@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { apiRequest } from '../../src/api.js';
-import { invalidateActivityReference, renderActivitiesView, formPage, validateForm } from '../../src/views/activities.js';
+import { invalidateActivityReference, renderActivitiesView, formPage, validateForm, listPage, detailPage, formatField } from '../../src/views/activities.js';
 import { modules } from '../../src/data.js';
 
 function setEnvironment(fetchResponse) {
@@ -180,6 +180,30 @@ test('activity list renders standard empty state without filter banner when no f
   assert.doesNotMatch(html, /กำลังกรองข้อมูล:/);
   assert.match(html, /ยังไม่มีข้อมูลในหมวดนี้/);
   assert.match(html, /เพิ่มข้อมูลใหม่/);
+});
+
+test('waterway dates validate and all original columns remain visible', () => {
+  setEnvironment(() => jsonResponse({ data: [] }));
+  const module = modules.find((item) => item.id === 'waterway-cleanings');
+  const record = { id: '1', service_date: '2026-09-30', end_date: '2026-10-02', waterway_name: 'คลองเดิม', distance_km: '2.5', quantity: '12.345' };
+  const distance = module.fields.find(field => field.name === 'distance_km');
+  assert.equal(formatField(distance, 100), '100 เมตร');
+  assert.equal(formatField(distance, '3.80'), '3.8 เมตร');
+  assert.equal(formatField(distance, 0), '0 เมตร');
+  assert.equal(modules.find(item => item.id === 'road-washings').fields.find(field => field.name === 'distance_km').unit, 'กิโลเมตร');
+  const form = formPage({ module, record });
+  assert.match(form, /วันเริ่ม/);
+  assert.match(form, /name="end_date"[^>]*value="2026-10-02"/);
+  const list = listPage({ module, params: new URLSearchParams(), records: [record] });
+  for (const label of ['วันเริ่ม', 'วันที่สิ้นสุด', 'ชื่อแหล่งน้ำ', 'ระยะทางปฏิบัติงาน', 'ปริมาณที่กำจัดได้']) assert.ok(list.includes(label));
+  assert.match(detailPage({ module, record }), /วันที่สิ้นสุด/);
+  const NativeFormData = globalThis.FormData;
+  globalThis.FormData = class { constructor(values) { return Object.entries(values); } };
+  try {
+    assert.deepEqual(validateForm(record, module).errors, {});
+    for (const end of ['', '2026-09-29', '2026-02-30', 'invalid']) assert.ok(validateForm({ ...record, end_date: end }, module).errors.end_date);
+    assert.deepEqual(validateForm({ ...record, end_date: record.service_date }, module).errors, {});
+  } finally { globalThis.FormData = NativeFormData; }
 });
 
 test('waste form requires a valid end date and uses kilograms', () => {

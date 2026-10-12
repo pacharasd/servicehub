@@ -60,8 +60,8 @@ export function dashboardContent({ data, loading, error, params, groups, modules
   const metricValue = (id, key) => data.module_summary[id]?.metrics[key] ?? 0;
   const groupMetrics = {
     cleaning: [
-      ['ระยะทางดำเนินงานรวม', visibleModules.filter(m => m.group === 'cleaning').reduce((sum, m) => sum + metricValue(m.id, 'distance_km'), 0), 'กิโลเมตร'],
-      ...(visible('waterway-cleanings') ? [['ผักตบชวาและมูลฝอยที่กำจัด', metricValue('waterway-cleanings', 'quantity'), 'ลูกบาศก์เมตร']] : []),
+      ['ระยะทางงานอื่นรวม', visibleModules.filter(m => m.group === 'cleaning' && m.id !== 'waterway-cleanings').reduce((sum, m) => sum + metricValue(m.id, 'distance_km'), 0), 'กิโลเมตร'],
+      ...(visible('waterway-cleanings') ? [['ระยะทางงานคลอง', metricValue('waterway-cleanings', 'distance_km'), 'เมตร'], ['ผักตบชวาและมูลฝอยที่กำจัด', metricValue('waterway-cleanings', 'quantity'), 'ลูกบาศก์เมตร']] : []),
     ],
     waste: [['น้ำหนักมูลฝอย', metricValue('waste-collections', 'weight'), 'กิโลกรัม']],
     sanitation: [

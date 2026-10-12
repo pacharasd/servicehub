@@ -13,7 +13,7 @@ class ServiceCatalog
 
     public const ACTIVITIES = [
         'road-washings' => ['table' => 'road_washings',           'group' => 'cleaning',   'fields' => ['cleaning_zone_id' => 'cleaning_zones', 'location' => 500, 'distance_km' => 'decimal']],
-        'waterway-cleanings' => ['table' => 'waterway_cleanings',      'group' => 'cleaning',   'fields' => ['waterway_name' => 255, 'distance_km' => 'decimal', 'quantity' => 'decimal']],
+        'waterway-cleanings' => ['table' => 'waterway_cleanings',      'group' => 'cleaning',   'fields' => ['end_date' => 'date', 'waterway_name' => 255, 'distance_km' => 'decimal', 'quantity' => 'decimal']],
         'road-sweepings' => ['table' => 'road_sweepings',          'group' => 'cleaning',   'fields' => ['road' => 255, 'distance_km' => 'decimal']],
         'outsourced-cleanings' => ['table' => 'outsourced_cleanings',    'group' => 'cleaning',   'fields' => ['location' => 500, 'distance_km' => 'decimal', 'community' => 255]],
         'waste-collections' => ['table' => 'waste_collections',       'group' => 'waste',      'fields' => ['end_date' => 'date', 'source' => 500, 'waste_type_id' => 'waste_types', 'weight' => 'decimal']],

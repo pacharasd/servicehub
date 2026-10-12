@@ -102,7 +102,7 @@ class ServiceReports
                 continue;
             }
             $unit = match ($column) {
-                'distance_km' => 'กิโลเมตร',
+                'distance_km' => $module === 'waterway-cleanings' ? 'เมตร' : 'กิโลเมตร',
                 'quantity' => 'ลูกบาศก์เมตร',
                 'weight' => 'กิโลกรัม',
                 'sediment_quantity', 'volume' => 'ลูกบาศก์เมตร',

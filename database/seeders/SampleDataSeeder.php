@@ -92,6 +92,7 @@ class SampleDataSeeder extends Seeder
             );
         }
 
+        // ระยะทางงานคลอง distance_km ใช้เมตร ตัวเลขตัวอย่างคงเดิม
         // 2. Waterway Cleanings (การกำจัดผักตบชวาและมูลฝอยในคลองสาธารณะ)
         $waterways = [
             ['waterway_name' => 'คลองบางกรวย ช่วงสะพานพระราม 7', 'distance_km' => 2.50, 'quantity' => 14.500],
@@ -110,6 +111,7 @@ class SampleDataSeeder extends Seeder
             DB::table('waterway_cleanings')->updateOrInsert(
                 ['waterway_name' => $row['waterway_name'], 'service_date' => $date],
                 [
+                    'end_date' => $date,
                     'distance_km' => $row['distance_km'],
                     'quantity' => $row['quantity'],
                     'created_by' => $adminId,

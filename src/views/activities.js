@@ -143,7 +143,7 @@ export function validateForm(form, module, references = activityReferences) {
     }
   });
 
-  if (module.id === 'waste-collections' && data.end_date && data.service_date && data.end_date < data.service_date) {
+  if (module.fields.some((field) => field.name === 'end_date') && data.end_date && data.service_date && data.end_date < data.service_date) {
     errors.end_date = 'วันที่สิ้นสุดต้องไม่ก่อนวันเริ่ม';
   }
   return { data, errors };
@@ -159,7 +159,7 @@ export function listPage({ module, group, params, records = activityRecords, ref
   const pages = Math.max(1, Number(meta?.last_page) || Math.ceil(total / pageSize) || 1);
   const safePage = Math.min(pages, Math.max(1, Number(meta?.current_page ?? params.get('page')) || 1));
   const visible = records;
-  const shownFields = module.fields.filter((f) => f.name !== 'service_date').slice(0, module.id === 'waste-collections' ? 4 : 3);
+  const shownFields = module.fields.filter((f) => f.name !== 'service_date').slice(0, ['waste-collections', 'waterway-cleanings'].includes(module.id) ? 4 : 3);
 
   const buildPage = (next) => {
     const nextParams = new URLSearchParams(params);
@@ -272,7 +272,7 @@ export function listPage({ module, group, params, records = activityRecords, ref
         <table class="w-full min-w-[650px] text-left text-sm" role="table">
           <thead class="bg-[#f9fbf9] text-xs font-semibold text-muted">
             <tr>
-              <th scope="col" class="px-5 py-3.5 whitespace-nowrap">${module.id === 'waste-collections' ? 'วันเริ่ม' : 'วันที่ดำเนินงาน'}</th>
+              <th scope="col" class="px-5 py-3.5 whitespace-nowrap">${module.fields.find((field) => field.name === 'service_date').label}</th>
               ${shownFields.map((f) => `<th scope="col" class="px-5 py-3.5 whitespace-nowrap ${module.id === 'waste-collections' && f.name === 'weight' ? 'text-right' : ''}">${esc(f.label)}</th>`).join('')}
               <th scope="col" class="px-5 py-3.5 whitespace-nowrap">ผู้บันทึก</th>
               <th scope="col" class="px-5 py-3.5 whitespace-nowrap text-right">ดูข้อมูล</th>

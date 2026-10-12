@@ -38,7 +38,7 @@ class LiveServiceApiTest extends TestCase
         $waste = $this->reference('waste_types');
         $payloads = [
             'road-washings' => ['cleaning_zone_id' => $zone, 'location' => 'ถนนสุขุมวิท', 'distance_km' => 2],
-            'waterway-cleanings' => ['waterway_name' => 'คลองทดสอบ', 'distance_km' => 2, 'quantity' => 3],
+            'waterway-cleanings' => ['end_date' => '2026-09-29', 'waterway_name' => 'คลองทดสอบ', 'distance_km' => 2, 'quantity' => 3],
             'road-sweepings' => ['road' => 'ถนนทดสอบ', 'distance_km' => 2],
             'outsourced-cleanings' => ['location' => 'จุดทดสอบ', 'distance_km' => 2, 'community' => 'ชุมชนทดสอบ'],
             'waste-collections' => ['end_date' => '2026-09-29', 'source' => 'แหล่งเก็บ 1', 'waste_type_id' => $waste, 'weight' => 3],
@@ -94,6 +94,46 @@ class LiveServiceApiTest extends TestCase
         $this->assertStringContainsString('service_date,road,distance_km', $csv);
         $this->assertStringContainsString($body['road'], $csv);
         $this->assertStringNotContainsString('storage_location', $csv);
+    }
+
+    public function test_waterway_end_date_migration_and_cross_month_api(): void
+    {
+        $user = $this->administrator();
+        $this->withSession(['auth_version' => $user->auth_version ?? 0])->actingAs($user, 'web');
+        $migration = require database_path('migrations/2026_10_12_000001_add_end_date_to_waterway_cleanings.php');
+        $migration->down();
+        $legacy = ['service_date' => '2026-09-30', 'waterway_name' => 'คลองเดิม', 'distance_km' => 2.5, 'quantity' => 12.345];
+        $legacyId = DB::table('waterway_cleanings')->insertGetId([...$legacy, 'deleted_at' => now()]);
+        $migration->up();
+        $migration->up();
+        $this->assertDatabaseHas('waterway_cleanings', ['id' => $legacyId, ...$legacy, 'end_date' => '2026-09-30']);
+
+        $body = [...$legacy, 'end_date' => '2026-10-02'];
+        foreach (['', '2026-09-29', '2026-02-30', 'invalid'] as $end) {
+            $this->postJson('/api/activities/waterway-cleanings', [...$body, 'end_date' => $end])
+                ->assertUnprocessable()->assertJsonValidationErrors('end_date');
+        }
+        $missing = $body;
+        unset($missing['end_date']);
+        $this->postJson('/api/activities/waterway-cleanings', $missing)->assertUnprocessable()->assertJsonValidationErrors('end_date');
+        $id = $this->postJson('/api/activities/waterway-cleanings', $body)->assertCreated()->json('data.id');
+        $this->getJson('/api/activities/waterway-cleanings/'.$id)->assertOk()->assertJsonPath('data.end_date', '2026-10-02');
+        $this->getJson('/api/activities/waterway-cleanings?q='.urlencode('คลองเดิม').'&from=2026-09-30&to=2026-09-30')->assertOk()->assertJsonPath('meta.total', 1);
+        $this->getJson('/api/activities/waterway-cleanings?from=2026-10-01&to=2026-10-31')->assertOk()->assertJsonPath('meta.total', 0);
+        $this->getJson('/api/dashboard?from=2026-09-01&to=2026-09-30')->assertOk()->assertJsonPath('data.total', 1);
+        $this->getJson('/api/reports?from=2026-09-01&to=2026-09-30')->assertOk()->assertJsonPath('data.waterway-cleanings.count', 1);
+        $this->getJson('/api/reports?from=2026-10-01&to=2026-10-31')->assertOk()->assertJsonPath('data.waterway-cleanings.count', 0);
+        $csv = $this->get('/api/activities/waterway-cleanings/export')->assertOk()->streamedContent();
+        $this->assertStringContainsString('service_date,end_date,waterway_name,distance_km,quantity', $csv);
+        $this->assertStringContainsString('2026-09-30,2026-10-02', $csv);
+        $this->putJson('/api/activities/waterway-cleanings/'.$id, [...$body, 'end_date' => '2026-09-29'])->assertUnprocessable()->assertJsonValidationErrors('end_date');
+        $this->putJson('/api/activities/waterway-cleanings/'.$id, [...$body, 'end_date' => '2026-09-30'])->assertOk()->assertJsonPath('data.end_date', '2026-09-30');
+        $this->assertDatabaseHas('waterway_cleanings', ['id' => $id, 'quantity' => 12.345, 'distance_km' => 2.5]);
+        $report = $this->getJson('/api/reports/waterway-cleanings?from=2026-09-01&to=2026-09-30')->assertOk();
+        $report->assertJsonPath('data.quantities.distance_km.0.unit', 'เมตร');
+        $this->assertEquals(2.5, $report->json('data.quantities.distance_km.0.total'));
+        $summaryCsv = $this->get('/api/reports/waterway-cleanings/export?from=2026-09-01&to=2026-09-30')->assertOk()->streamedContent();
+        $this->assertStringContainsString('เมตร', $summaryCsv);
     }
 
     public function test_waste_end_date_migration_preserves_legacy_dates_and_weights(): void
@@ -261,12 +301,12 @@ class LiveServiceApiTest extends TestCase
         $user = $this->administrator();
         $this->withSession(['auth_version' => $user->auth_version ?? 0])->actingAs($user, 'web');
         $this->getJson('/api/dashboard')->assertOk()->assertJsonPath('data.total', 0);
-        $recordId = $this->postJson('/api/activities/waterway-cleanings', ['service_date' => '2026-09-29', 'waterway_name' => 'คลองทดสอบ', 'distance_km' => 2, 'quantity' => 3])->assertCreated()->json('data.id');
+        $recordId = $this->postJson('/api/activities/waterway-cleanings', ['service_date' => '2026-09-29', 'end_date' => '2026-09-29', 'waterway_name' => 'คลองทดสอบ', 'distance_km' => 2, 'quantity' => 3])->assertCreated()->json('data.id');
         $this->getJson('/api/dashboard')->assertOk()->assertJsonPath('data.total', 1);
         $this->getJson('/api/reports?from=2026-09-01&to=2026-09-30')->assertOk()->assertJsonPath('data.waterway-cleanings.count', 1);
         $this->get('/api/activities/waterway-cleanings/export')->assertOk()->assertHeader('content-type', 'text/csv; charset=UTF-8');
         $this->getJson('/api/audit-logs')->assertOk()->assertJsonFragment(['action' => 'waterway-cleanings.created']);
-        $otherId = $this->postJson('/api/activities/waterway-cleanings', ['service_date' => '2026-09-29', 'waterway_name' => 'คลองสอง', 'distance_km' => 1, 'quantity' => 5])->assertCreated()->json('data.id');
+        $otherId = $this->postJson('/api/activities/waterway-cleanings', ['service_date' => '2026-09-29', 'end_date' => '2026-09-29', 'waterway_name' => 'คลองสอง', 'distance_km' => 1, 'quantity' => 5])->assertCreated()->json('data.id');
         $this->assertEquals(8, $this->getJson('/api/reports')->assertOk()->json('data.waterway-cleanings.quantities.quantity.0.total'));
         $this->deleteJson('/api/activities/waterway-cleanings/'.$recordId)->assertOk();
         $this->deleteJson('/api/activities/waterway-cleanings/'.$otherId)->assertOk();

@@ -100,3 +100,11 @@ test('dashboardContent in filtered mode links with date parameters and shows fil
   // Verify constrained module link WITH date query params
   assert.match(html, /href="#\/module\/road-washings\?from=2026-10-01&(?:amp;)?to=2026-10-31"/);
 });
+test('dashboard separates waterway meters from other cleaning kilometers', () => {
+  const data = mockDashboardData();
+  data.module_summary['waterway-cleanings'].metrics.distance_km = 100;
+  const html = dashboardContent({ data, loading: false, error: '', params: new URLSearchParams(), groups, modules, icon, esc, number, moduleHref: id => '#/module/' + id });
+  assert.match(html, /ระยะทางงานคลอง<\/dt><dd[^>]*>100 เมตร/);
+  assert.match(html, /ระยะทางงานอื่นรวม<\/dt><dd[^>]*>15 กิโลเมตร/);
+  assert.doesNotMatch(html, /115 กิโลเมตร/);
+});
