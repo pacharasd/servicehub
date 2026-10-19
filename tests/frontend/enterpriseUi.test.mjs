@@ -1,0 +1,146 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { JSDOM } from 'jsdom';
+import { wasteWeightChart, distributionChart } from '../../src/components/dashboardCharts.js';
+import { esc, number } from '../../src/utils/format.js';
+
+test('sidebar supports collapse, storage failure, focus tooltips, drawer, accordion, dropdown and route replacement', async () => {
+  const dom = new JSDOM('<meta name="csrf-token" content="test"><div id="app"></div>',{url:'http://localhost/Servicehub'});
+  globalThis.window=dom.window; globalThis.document=dom.window.document; globalThis.localStorage=dom.window.localStorage;
+  window.serviceHubUser={roles:['super-admin'],name:'ชื่อผู้ใช้งานทดสอบ',username:'test'};
+  Object.defineProperty(window,'innerWidth',{value:1440,writable:true});
+  let requests=0; globalThis.fetch=()=>{requests++;throw new Error('Unexpected request');};
+  const nav=await import('../../src/components/navigation.js');
+  const app=document.getElementById('app');
+  app.innerHTML=nav.renderShell('<h1>ทดสอบ</h1>','dashboard',[],true);
+  await Promise.resolve();
+  nav.initShell(); nav.initShell();
+  assert.equal(document.getElementById('sidebar').getAttribute('aria-hidden'),'false');
+  document.querySelector('[data-action="toggle-desktop-sidebar"]').click();
+  assert.ok(document.documentElement.classList.contains('sidebar-collapsed'));
+  assert.equal(localStorage.getItem('servicehub.sidebar-collapsed'),'true');
+  assert.equal(document.querySelector('.sidebar-expanded').inert,true);
+  const rail=document.querySelector('.sidebar-rail [data-group="cleaning"]');
+  rail.focus();
+  assert.equal(document.querySelector('[role="tooltip"]').textContent,'งานบริการรักษาความสะอาด');
+  rail.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+  assert.equal(document.querySelector('[role="tooltip"]'),null);
+  rail.click();
+  assert.equal(document.documentElement.classList.contains('sidebar-collapsed'),false);
+  assert.equal(document.getElementById('sidebar-group-cleaning').hidden,false);
+  const group=document.querySelector('[data-action="toggle-sidebar-group"][data-group="cleaning"]');
+  group.click(); assert.equal(document.getElementById('sidebar-group-cleaning').hidden,true);
+  group.click(); assert.equal(group.getAttribute('aria-expanded'),'true');
+  nav.toggleDesktopSidebar(true);
+  app.innerHTML=nav.renderShell('<h1>รายงาน</h1>','reports'); await Promise.resolve();
+  assert.ok(document.documentElement.classList.contains('sidebar-collapsed'));
+  assert.equal(document.querySelector('.sidebar-rail [href="#/reports"]').getAttribute('aria-current'),'page');
+  nav.toggleDesktopSidebar(false);
+  Object.defineProperty(dom.window.Storage.prototype,'setItem',{value(){throw new Error('Blocked');},configurable:true});
+  assert.doesNotThrow(()=>nav.toggleDesktopSidebar(true));
+  for (const width of [320,768]) {
+    window.innerWidth=width; window.dispatchEvent(new window.Event('resize'));
+    assert.equal(document.getElementById('sidebar').inert,true);
+    nav.toggleMobileMenu(true);
+    assert.equal(document.querySelector('.sidebar-expanded').inert,false);
+    assert.equal(document.querySelector('.app-shell').inert,true);
+    assert.equal(document.activeElement.dataset.action,'close-menu');
+    const links=[...document.querySelectorAll('#sidebar a[href],#sidebar button')].filter(e=>!e.closest('[hidden],.sidebar-rail'));
+    links.at(-1).focus();
+    links.at(-1).dispatchEvent(new window.KeyboardEvent('keydown',{key:'Tab',bubbles:true,cancelable:true}));
+    assert.equal(document.activeElement,links[0]);
+    document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+    assert.equal(document.activeElement.dataset.action,'open-menu');
+    assert.equal(document.body.style.overflow,'');
+  }
+  window.innerWidth=1024;nav.syncMobileNavigation();
+  nav.toggleUserMenu();
+  assert.equal(document.activeElement.getAttribute('role'),'menuitem');
+  document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'ArrowDown',bubbles:true,cancelable:true}));
+  assert.equal(document.activeElement.textContent.trim(),'ออกจากระบบ');
+  document.dispatchEvent(new window.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+  assert.equal(document.activeElement.id,'user-menu-button');
+  window.serviceHubUser={roles:['staff'],permissions:['road-sweepings.view']};
+  app.innerHTML=nav.renderShell('<h1>จำกัดสิทธิ์</h1>','road-sweepings');await Promise.resolve();
+  assert.equal(document.querySelector('.sidebar-rail [data-group="sanitation"]'),null);
+  assert.equal(requests,0);
+  dom.window.close();
+});
+
+test('charts expose waste weights and permission scoped distributions with explicit empty states', () => {
+  const breakdown=[{name:'ชื่อยาว'.repeat(30)+'<script>',weight:1250.125},{name:'ศูนย์',weight:0}];
+  const html=wasteWeightChart({breakdown,esc,number});
+  const doc=new JSDOM(html).window.document;
+  assert.equal(doc.querySelectorAll('.distribution-fill').length,2);
+  assert.equal(doc.querySelectorAll('tbody tr').length,2);
+  assert.match(html,/1,250.13 กิโลกรัม/);
+  assert.match(html,/width:0%/);
+  assert.equal(doc.querySelector('script'),null);
+  assert.doesNotMatch(html,/NaN|Infinity/);
+  assert.match(wasteWeightChart({breakdown:[],esc,number}),/ยังไม่มีข้อมูล/);
+  assert.match(wasteWeightChart({esc,number}),/role="alert"/);
+  const groups=[{id:'waste',label:'มูลฝอย'},{id:'cleaning',label:'ความสะอาด'}];
+  const distribution=distributionChart({groups,summary:{waste:1,cleaning:3,hidden:100},esc,number});
+  assert.match(distribution,/25%/); assert.match(distribution,/75%/); assert.doesNotMatch(distribution,/>hidden<|100 รายการ/);
+  assert.doesNotMatch(wasteWeightChart({breakdown:[{name:'ศูนย์',weight:0}],esc,number}),/distribution-fill/);
+  assert.doesNotMatch(distributionChart({groups,summary:{},esc,number}),/NaN|Infinity|distribution-fill/);
+});
+
+test('design tokens meet text contrast and responsive rules stay explicit without browser rendering',async()=>{
+  const css=await readFile(new URL('../../src/style.css',import.meta.url),'utf8');
+  const luminance=hex=>{
+    const c=hex.match(/[a-f\d]{2}/gi).map(v=>parseInt(v,16)/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4);
+    return c[0]*.2126+c[1]*.7152+c[2]*.0722;
+  };
+  for(const [fg,bg] of [['0F766E','FFFFFF'],['52676B','F8FAF9'],['16313A','F8FAF9'],['115E59','E6F3F0'],['166534','FFFFFF'],['92400E','FFFFFF'],['B91C1C','FFFFFF'],['075985','FFFFFF']]) {
+    const a=luminance(fg),b=luminance(bg);assert.ok((Math.max(a,b)+.05)/(Math.min(a,b)+.05)>=4.5,fg);
+  }
+  assert.match(css,/width: 296px/);assert.match(css,/width: 72px/);assert.match(css,/min-width: 1024px/);
+  assert.match(css,/prefers-reduced-motion/);assert.match(css,/font-display: swap/);
+  assert.equal((css.match(/@font-face/g)||[]).length,4);
+  const typography=await readFile(new URL('../../src/typography.css',import.meta.url),'utf8');
+  assert.equal((typography.match(/@font-face/g)||[]).length,2);
+});
+
+test('page loading, completion and navigation preserve sidebar nodes, scroll, focus and collapse state', async () => {
+  const dom=new JSDOM('<div id="app"></div>',{url:'http://localhost/Servicehub'});
+  globalThis.window=dom.window;globalThis.document=dom.window.document;globalThis.localStorage=dom.window.localStorage;
+  window.serviceHubUser={roles:['super-admin'],name:'ทดสอบ',username:'test'};
+  window.innerWidth=1440;
+  const nav=await import('../../src/components/navigation.js');
+  nav.toggleMobileMenu(false);nav.toggleDesktopSidebar(false);
+  const app=document.getElementById('app');
+  const crumbs=[{label:'งานถนน',current:true}];
+  nav.expandActiveSidebarGroup('road-washings');
+  nav.mountShell(app,'<p role="status">กำลังโหลด</p>','road-washings',crumbs);
+  const sidebar=document.getElementById('sidebar');
+  const menu=sidebar.querySelector('.sidebar-expanded');
+  const group=sidebar.querySelector('[data-action="toggle-sidebar-group"][data-group="cleaning"]');
+  const header=document.querySelector('.app-header');
+  menu.scrollTop=240;group.focus();
+  const observer=new window.MutationObserver(()=>{});
+  observer.observe(app,{childList:true,subtree:true});
+  nav.mountShell(app,'<h1>ข้อมูลสำเร็จ</h1>','road-washings',crumbs);
+  assert.equal(document.getElementById('sidebar'),sidebar);
+  assert.equal(document.querySelector('.app-header'),header);
+  assert.equal(document.activeElement,group);
+  assert.equal(menu.scrollTop,240);
+  assert.equal(observer.takeRecords().some(record=>record.target===sidebar||sidebar.contains(record.target)),false);
+  nav.expandActiveSidebarGroup('waterway-cleanings');
+  nav.mountShell(app,'<p role="status">กำลังโหลดคลอง</p>','waterway-cleanings',[{label:'คลอง',current:true}]);
+  assert.equal(document.getElementById('sidebar'),sidebar);
+  assert.equal(sidebar.querySelector('.sidebar-expanded'),menu);
+  assert.equal(menu.scrollTop,240);
+  assert.equal(sidebar.querySelector('.sidebar-expanded [aria-current="page"]').getAttribute('href'),'#/module/waterway-cleanings');
+  nav.mountShell(app,'<h1>คลองสำเร็จ</h1>','waterway-cleanings',[{label:'คลอง',current:true}]);
+  assert.equal(document.getElementById('sidebar'),sidebar);
+  assert.equal(menu.scrollTop,240);
+  nav.toggleDesktopSidebar(true);
+  nav.mountShell(app,'<p role="alert">โหลดไม่ได้</p>','reports',[{label:'รายงาน',current:true}]);
+  assert.equal(document.getElementById('sidebar'),sidebar);
+  assert.ok(document.documentElement.classList.contains('sidebar-collapsed'));
+  assert.equal(sidebar.querySelector('.sidebar-rail [aria-current="page"]').getAttribute('href'),'#/reports');
+  assert.match(document.getElementById('main-content').textContent,/โหลดไม่ได้/);
+  observer.disconnect();dom.window.close();
+});

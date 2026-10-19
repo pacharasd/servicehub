@@ -44,8 +44,13 @@ class ServiceRecordController extends Controller
                 $columns = array_keys(array_filter($definition['fields'], fn ($type) => is_int($type) || $type === 'text'));
                 $referenceMatches = [];
                 foreach ($definition['fields'] as $column => $type) {
-                    if (in_array($type, ['cleaning_zones', 'waste_types'], true)) {
-                        $referenceMatches[$column] = DB::table($type)->where('name', 'like', '%'.addcslashes($term, '%_\\').'%')->pluck('id')->all();
+                    if (in_array($type, ['cleaning_zones', 'waste_types', 'drain_work_types'], true)) {
+                        $referenceMatches[$column] = DB::table($type)->where(function ($q) use ($type, $term) {
+                            $q->where('name', 'like', '%'.addcslashes($term, '%_\\').'%');
+                            if ($type === 'drain_work_types') {
+                                $q->orWhere('code', 'like', '%'.addcslashes($term, '%_\\').'%');
+                            }
+                        })->pluck('id')->all();
                     }
                 }
                 $query->where(function (Builder $subquery) use ($columns, $referenceMatches, $term) {
@@ -61,7 +66,7 @@ class ServiceRecordController extends Controller
             }
         }
         foreach ($definition['fields'] as $column => $type) {
-            if (in_array($type, ['cleaning_zones', 'waste_types'], true) && $request->filled($column)) {
+            if (in_array($type, ['cleaning_zones', 'waste_types', 'drain_work_types'], true) && $request->filled($column)) {
                 $query->where($column, $request->input($column));
             }
         }
@@ -79,7 +84,7 @@ class ServiceRecordController extends Controller
         $data['created_by'] = $record->creator?->name ?? 'ไม่ระบุ';
         $data['updated_by'] = $record->editor?->name ?? 'ไม่ระบุ';
         foreach (ServiceCatalog::activity($module)['fields'] as $column => $table) {
-            if (! in_array($table, ['cleaning_zones', 'waste_types'], true) || ! $record->{$column}) {
+            if (! in_array($table, ['cleaning_zones', 'waste_types', 'drain_work_types'], true) || ! $record->{$column}) {
                 continue;
             }
             if (! isset($this->referenceCache[$table])) {
@@ -90,9 +95,13 @@ class ServiceRecordController extends Controller
             $alias = match ($column) {
                 'cleaning_zone_id' => 'cleaning_zone',
                 'waste_type_id' => 'waste_type',
+                'drain_work_type_id' => 'drain_work_type',
                 default => $column,
             };
             $data[$alias] = $label;
+            if ($column === 'drain_work_type_id') {
+                $data['drain_work_type_code'] = $ref?->code;
+            }
         }
 
         return $data;
@@ -169,7 +178,7 @@ class ServiceRecordController extends Controller
         $columns = ['service_date', ...array_keys($fields)];
         $referenceMaps = [];
         foreach (array_unique(array_values($fields)) as $table) {
-            if (in_array($table, ['cleaning_zones', 'waste_types'], true)) {
+            if (in_array($table, ['cleaning_zones', 'waste_types', 'drain_work_types'], true)) {
                 $referenceMaps[$table] = DB::table($table)->pluck('name', 'id')->all();
             }
         }

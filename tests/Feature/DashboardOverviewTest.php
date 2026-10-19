@@ -151,6 +151,66 @@ class DashboardOverviewTest extends TestCase
         $this->getJson('/api/dashboard?from=2026-11-01&to=2026-10-31')->assertUnprocessable()->assertJsonValidationErrors('to');
     }
 
+    public function test_waste_overview_uses_weight_code_and_start_date_in_one_extra_query(): void
+    {
+        $this->signIn();
+        $hazard = DB::table('waste_types')->where('code', 'WASTE-004')->value('id');
+        $general = DB::table('waste_types')->where('code', 'WASTE-001')->value('id');
+        $other = DB::table('waste_types')->insertGetId(['code' => '2.2.2', 'name' => 'มูลฝอยอันตรายและซากอิเล็กทรอนิกส์', 'is_active' => false]);
+        $this->add('waste_collections', ['source' => 'หนึ่ง', 'waste_type_id' => $hazard, 'weight' => 10, 'end_date' => '2026-11-01']);
+        $this->add('waste_collections', ['source' => 'สอง', 'waste_type_id' => $general, 'weight' => 4]);
+        $this->add('waste_collections', ['source' => 'สาม', 'waste_type_id' => $general, 'weight' => 6]);
+        $this->add('waste_collections', ['source' => 'สี่', 'waste_type_id' => $other, 'weight' => 10]);
+        $this->add('waste_collections', ['source' => 'เก่า', 'waste_type_id' => $hazard, 'weight' => 100], '2026-09-30');
+        $this->add('waste_collections', ['source' => 'ลบ', 'waste_type_id' => $hazard, 'weight' => 999, 'deleted_at' => now()]);
+        $queries = [];
+        DB::listen(function ($event) use (&$queries): void {
+            if (str_contains($event->sql, 'waste_collections')) {
+                $queries[] = $event->sql;
+            }
+        });
+        $item = $this->getJson('/api/dashboard?from=2026-10-01&to=2026-10-31')->assertOk()->json('data.module_summary.waste-collections');
+        $this->assertSame(4, $item['count']);
+        $this->assertEquals(30, $item['metrics']['weight']);
+        $this->assertEquals(10, $item['waste_overview']['hazardous_weight']);
+        $this->assertSame('2.2.2', $item['waste_overview']['top_type']['code']);
+        $this->assertEquals(10, $item['waste_overview']['top_type']['weight']);
+        $this->assertCount(5, $queries);
+        $breakdown = $item['waste_overview']['breakdown'];
+        $this->assertSame(['2.2.2', 'WASTE-001', 'WASTE-004'], array_column($breakdown, 'code'));
+        $this->assertEquals($item['metrics']['weight'], array_sum(array_column($breakdown, 'weight')));
+        $this->assertSame('มูลฝอยอันตรายและซากอิเล็กทรอนิกส์', $breakdown[0]['name']);
+        $all = $this->getJson('/api/dashboard')->assertOk()->json('data.module_summary.waste-collections');
+        $this->assertSame('WASTE-004', $all['waste_overview']['breakdown'][0]['code']);
+        $this->assertEquals(110, $all['waste_overview']['breakdown'][0]['weight']);
+        $this->assertEquals($all['metrics']['weight'], array_sum(array_column($all['waste_overview']['breakdown'], 'weight')));
+        $this->getJson('/api/dashboard?to=2026-09-30')->assertOk()
+            ->assertJsonPath('data.module_summary.waste-collections.waste_overview.hazardous_weight', 100)
+            ->assertJsonPath('data.module_summary.waste-collections.waste_overview.breakdown.0.weight', 100)
+            ->assertJsonPath('data.module_summary.waste-collections.waste_overview.top_type.code', 'WASTE-004');
+        $this->getJson('/api/dashboard?from=2026-11-01')->assertOk()
+            ->assertJsonPath('data.module_summary.waste-collections.count', 0)
+            ->assertJsonPath('data.module_summary.waste-collections.waste_overview.breakdown', [])
+            ->assertJsonPath('data.module_summary.waste-collections.waste_overview.top_type', null);
+    }
+
+    public function test_waste_overview_empty_zero_and_no_hazard_records(): void
+    {
+        $this->signIn();
+        $this->getJson('/api/dashboard')->assertOk()
+            ->assertJsonPath('data.module_summary.waste-collections.waste_overview.hazardous_weight', 0)
+            ->assertJsonPath('data.module_summary.waste-collections.waste_overview.top_type', null);
+        $type = DB::table('waste_types')->where('code', 'WASTE-001')->value('id');
+        $id = $this->add('waste_collections', ['source' => 'ศูนย์', 'waste_type_id' => $type, 'weight' => 0]);
+        $this->getJson('/api/dashboard')->assertOk()
+            ->assertJsonPath('data.module_summary.waste-collections.count', 1)
+            ->assertJsonPath('data.module_summary.waste-collections.waste_overview.top_type', null);
+        DB::table('waste_collections')->where('id', $id)->update(['weight' => 12.5]);
+        $this->getJson('/api/dashboard')->assertOk()
+            ->assertJsonPath('data.module_summary.waste-collections.waste_overview.hazardous_weight', 0)
+            ->assertJsonPath('data.module_summary.waste-collections.waste_overview.top_type.weight', 12.5);
+    }
+
     public function test_summary_only_contains_modules_the_user_can_view(): void
     {
         $this->signIn();

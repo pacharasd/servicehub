@@ -81,6 +81,7 @@ export function resolveRouteTitle(routeData) {
   if (root === 'profile') return 'โปรไฟล์ส่วนบุคคล';
   if (root === 'audit-logs') return 'ประวัติการแก้ไข';
   if (root === 'cleaning-zones') return 'เขตรักษาความสะอาด';
+  if (root === 'drain-work-types') return 'ประเภทงานลอกท่อ';
   if (root === 'waste-types') return 'ประเภทขยะมูลฝอย';
   if (root === 'reports') {
     const mod = modules.find((m) => m.id === second);
@@ -220,6 +221,7 @@ export class Router {
     if (root === 'cleaning-zones' && !can('cleaning-zones.view')) {
       return false;
     }
+    if (root === 'drain-work-types' && !can('drain-work-types.view')) return false;
     if (root === 'waste-types' && !can('waste-types.view')) {
       return false;
     }

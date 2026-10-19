@@ -220,6 +220,7 @@ class SampleDataSeeder extends Seeder
         ];
         foreach ($drainCleanings as $i => $row) {
             $date = $dates[$i % count($dates)];
+            // Keep work types unassigned in sample legacy records; administrators create real types.
             DB::table('drain_cleanings')->updateOrInsert(
                 ['location' => $row['location'], 'service_date' => $date],
                 [

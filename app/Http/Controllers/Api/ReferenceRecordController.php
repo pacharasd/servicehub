@@ -18,6 +18,7 @@ class ReferenceRecordController extends Controller
         [$table, $column] = match ($type) {
             'cleaning-zones' => ['road_washings', 'cleaning_zone_id'],
             'waste-types' => ['waste_collections', 'waste_type_id'],
+            'drain-work-types' => ['drain_cleanings', 'drain_work_type_id'],
             default => [null, null],
         };
 
@@ -114,6 +115,7 @@ class ReferenceRecordController extends Controller
             $references = match ($type) {
                 'cleaning-zones' => [['road_washings', 'cleaning_zone_id']],
                 'waste-types' => [['waste_collections', 'waste_type_id']],
+                'drain-work-types' => [['drain_cleanings', 'drain_work_type_id']],
                 'communities' => [['outsourced_cleanings', 'community_id']],
                 'locations' => [['road_washings', 'location_id'], ['road_sweepings', 'storage_location_id'], ['outsourced_cleanings', 'location_id'], ['waste_collections', 'source_location_id'], ['drain_cleanings', 'location_id'], ['septic_pumpings', 'location_id']],
                 'measurement-units' => [['waterway_cleanings', 'quantity_unit_id'], ['waste_collections', 'weight_unit_id'], ['drain_cleanings', 'sediment_unit_id'], ['septic_pumpings', 'volume_unit_id'], ['septic_treatments', 'sludge_unit_id'], ['septic_treatments', 'fertilizer_unit_id']],

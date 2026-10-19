@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Support\ReportWorkbook;
 use App\Support\ServiceAudit;
 use App\Support\ServiceCatalog;
 use App\Support\ServiceReports;
@@ -11,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ServiceOverviewController extends Controller
@@ -96,6 +98,28 @@ class ServiceOverviewController extends Controller
                 $metrics['fertilizer_remaining_latest'] = $latest === null ? null : (float) $latest;
             }
             $modules[$module] = ['group' => $definition['group'], 'count' => $count, 'metrics' => $metrics];
+            if ($module === 'waste-collections') {
+                $types = (clone $periodQuery)
+                    ->leftJoin('waste_types', 'waste_collections.waste_type_id', '=', 'waste_types.id')
+                    ->select('waste_types.code', 'waste_types.name')
+                    ->selectRaw('COALESCE(SUM(waste_collections.weight), 0) as total_weight')
+                    ->groupBy('waste_types.id', 'waste_types.code', 'waste_types.name')
+                    ->orderByDesc('total_weight')->orderBy('waste_types.code')->get();
+                $top = $types->first();
+                $modules[$module]['waste_overview'] = [
+                    'breakdown' => $types->map(fn ($type) => [
+                        'code' => $type->code,
+                        'name' => $type->name,
+                        'weight' => (float) $type->total_weight,
+                    ])->all(),
+                    'hazardous_weight' => (float) ($types->firstWhere('code', 'WASTE-004')->total_weight ?? 0),
+                    'top_type' => $top && (float) $top->total_weight > 0 ? [
+                        'code' => $top->code,
+                        'name' => $top->name,
+                        'weight' => (float) $top->total_weight,
+                    ] : null,
+                ];
+            }
             $groups[$definition['group']] = ($groups[$definition['group']] ?? 0) + $count;
 
             foreach ((clone $query)->whereBetween('service_date', [$start->toDateString(), $end->toDateString()])
@@ -170,9 +194,13 @@ class ServiceOverviewController extends Controller
         ]);
     }
 
-    public function reportExport(Request $request, ServiceReports $reports): StreamedResponse
+    public function reportExport(Request $request, ServiceReports $reports): StreamedResponse|BinaryFileResponse
     {
+        $request->validate(['format' => ['sometimes', 'in:csv,xlsx']]);
         $period = $reports->period($request);
+        if ($request->input('format') === 'xlsx') {
+            return app(ReportWorkbook::class)->download($request, $reports, $period);
+        }
         $summary = $reports->summary($request, $period, 'export');
         abort_if($summary['data'] === [], 403);
         ServiceAudit::write('export_requested', 'report', 0, null, ['from' => $period['from'], 'to' => $period['to']]);
@@ -180,11 +208,15 @@ class ServiceOverviewController extends Controller
         return $this->reportCsv($summary['data'], $period, 'servicehub-report.csv');
     }
 
-    public function reportDetailExport(Request $request, string $module, ServiceReports $reports): StreamedResponse
+    public function reportDetailExport(Request $request, string $module, ServiceReports $reports): StreamedResponse|BinaryFileResponse
     {
         ServiceCatalog::activity($module);
         abort_unless($request->user()->can($module.'.export'), 403);
+        $request->validate(['format' => ['sometimes', 'in:csv,xlsx']]);
         $period = $reports->period($request);
+        if ($request->input('format') === 'xlsx') {
+            return app(ReportWorkbook::class)->download($request, $reports, $period, $module);
+        }
         ServiceAudit::write('export_requested', 'report', 0, null, ['module' => $module, 'from' => $period['from'], 'to' => $period['to']]);
 
         return $this->reportCsv([$module => $reports->module($module, $period)], $period, $module.'-report.csv');

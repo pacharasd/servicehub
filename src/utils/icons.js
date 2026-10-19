@@ -69,5 +69,5 @@ export function icon(name, size = 20, cls = '', attrs = {}) {
     .map(([k, v]) => `${k}="${esc(v)}"`)
     .join(' ');
 
-  return `<svg class="${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ${defaultAria} ${extraAttrs}>${svgContent}</svg>`;
+  return `<svg class="${cls}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${defaultAria} ${extraAttrs}>${svgContent}</svg>`;
 }

@@ -36,13 +36,14 @@ class LiveServiceApiTest extends TestCase
         $this->withSession(['auth_version' => $user->auth_version ?? 0])->actingAs($user, 'web');
         $zone = $this->reference('cleaning_zones');
         $waste = $this->reference('waste_types');
+        $drainType = DB::table('drain_work_types')->insertGetId(['code' => 'TEST', 'name' => 'ประเภททดสอบ', 'is_active' => true]);
         $payloads = [
             'road-washings' => ['cleaning_zone_id' => $zone, 'location' => 'ถนนสุขุมวิท', 'distance_km' => 2],
             'waterway-cleanings' => ['end_date' => '2026-09-29', 'waterway_name' => 'คลองทดสอบ', 'distance_km' => 2, 'quantity' => 3],
             'road-sweepings' => ['road' => 'ถนนทดสอบ', 'distance_km' => 2],
             'outsourced-cleanings' => ['location' => 'จุดทดสอบ', 'distance_km' => 2, 'community' => 'ชุมชนทดสอบ'],
             'waste-collections' => ['end_date' => '2026-09-29', 'source' => 'แหล่งเก็บ 1', 'waste_type_id' => $waste, 'weight' => 3],
-            'drain-cleanings' => ['location' => 'จุดท่อทดสอบ', 'distance_km' => 2, 'sediment_quantity' => 3],
+            'drain-cleanings' => ['drain_work_type_id' => $drainType, 'location' => 'จุดท่อทดสอบ', 'distance_km' => 2, 'sediment_quantity' => 3],
             'septic-pumpings' => ['location' => 'บ้านเลขที่ 123', 'volume' => 3, 'fee_amount' => 10],
             'septic-treatments' => ['sludge_quantity' => 3, 'fertilizer_remaining' => 4, 'microbial_note' => 'ทดสอบ'],
             'waste-management-projects' => ['project_name' => 'โครงการทดสอบ', 'communities_count' => 2, 'participants_count' => 10],

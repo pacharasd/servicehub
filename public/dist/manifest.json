@@ -1,10 +1,34 @@
 {
+  "src/assets/fonts/ibm-plex-sans-thai-latin-400-normal.woff2": {
+    "file": "assets/ibm-plex-sans-thai-latin-400-normal-CwmoKdEh.woff2",
+    "src": "src/assets/fonts/ibm-plex-sans-thai-latin-400-normal.woff2"
+  },
+  "src/assets/fonts/ibm-plex-sans-thai-latin-700-normal.woff2": {
+    "file": "assets/ibm-plex-sans-thai-latin-700-normal-Ct-BCS9V.woff2",
+    "src": "src/assets/fonts/ibm-plex-sans-thai-latin-700-normal.woff2"
+  },
+  "src/assets/fonts/ibm-plex-sans-thai-thai-400-normal.woff2": {
+    "file": "assets/ibm-plex-sans-thai-thai-400-normal-Bt1rR4gi.woff2",
+    "src": "src/assets/fonts/ibm-plex-sans-thai-thai-400-normal.woff2"
+  },
+  "src/assets/fonts/ibm-plex-sans-thai-thai-700-normal.woff2": {
+    "file": "assets/ibm-plex-sans-thai-thai-700-normal-0moayseG.woff2",
+    "src": "src/assets/fonts/ibm-plex-sans-thai-thai-700-normal.woff2"
+  },
+  "src/assets/fonts/line-seed/LINESeedSansTH_W_Bd.woff2": {
+    "file": "assets/LINESeedSansTH_W_Bd-Dc6pt85o.woff2",
+    "src": "src/assets/fonts/line-seed/LINESeedSansTH_W_Bd.woff2"
+  },
+  "src/assets/fonts/line-seed/LINESeedSansTH_W_Rg.woff2": {
+    "file": "assets/LINESeedSansTH_W_Rg-CuG6T33m.woff2",
+    "src": "src/assets/fonts/line-seed/LINESeedSansTH_W_Rg.woff2"
+  },
   "src/assets/nonthaburi-logo.png": {
     "file": "assets/nonthaburi-logo-BUg5neRh.png",
     "src": "src/assets/nonthaburi-logo.png"
   },
   "src/auth.css": {
-    "file": "assets/auth-1bM-Z58e.css",
+    "file": "assets/auth-Bk8d6iQo.css",
     "src": "src/auth.css",
     "isEntry": true,
     "name": "auth",
@@ -14,15 +38,21 @@
     ]
   },
   "src/main.js": {
-    "file": "assets/main-CrFPYJyT.js",
+    "file": "assets/main-Cd447ZD6.js",
     "name": "main",
     "src": "src/main.js",
     "isEntry": true,
     "css": [
-      "assets/auth-1bM-Z58e.css"
+      "assets/auth-Bk8d6iQo.css"
     ],
     "assets": [
-      "assets/nonthaburi-logo-BUg5neRh.png"
+      "assets/nonthaburi-logo-BUg5neRh.png",
+      "assets/LINESeedSansTH_W_Rg-CuG6T33m.woff2",
+      "assets/LINESeedSansTH_W_Bd-Dc6pt85o.woff2",
+      "assets/ibm-plex-sans-thai-thai-400-normal-Bt1rR4gi.woff2",
+      "assets/ibm-plex-sans-thai-latin-400-normal-CwmoKdEh.woff2",
+      "assets/ibm-plex-sans-thai-thai-700-normal-0moayseG.woff2",
+      "assets/ibm-plex-sans-thai-latin-700-normal-Ct-BCS9V.woff2"
     ]
   }
 }

@@ -4,7 +4,7 @@
  * Conforms to ADR 0007, ADR 0009 & WCAG 2.2 Level AA (Landmarks & Touch Targets)
  */
 
-import fallbackLogoUrl from '../assets/nonthaburi-logo.png';
+const fallbackLogoUrl = new URL('../assets/nonthaburi-logo.png', import.meta.url).href;
 import { can, canManageUsers } from '../api.js';
 import { esc, moduleHref, roleBadgeMap, roleNameMap } from '../utils/format.js';
 import { icon } from '../utils/icons.js';
@@ -32,7 +32,7 @@ export const sidebarItems = [
     label: 'งานบริหารจัดการสิ่งปฏิกูล',
     icon: 'droplet',
     children: [
-      { module: 'drain-cleanings', label: 'งานลอกท่อระบายน้ำ' },
+      { module: 'drain-cleanings', label: 'งานลอกท่อระบายน้ำ', children: [{module:'drain-work-types',href:'#/drain-work-types',label:'ประเภทงานลอกท่อ'}] },
       { module: 'septic-pumpings', label: 'งานสูบสิ่งปฏิกูล' },
       { module: 'septic-treatments', label: 'การบำบัดสิ่งปฏิกูล' },
     ],
@@ -42,11 +42,33 @@ export const sidebarItems = [
 
 let mobileOpen = false;
 let userMenuOpen = false;
+let desktopCollapsed = false;
+let shellInitialized = false;
+try { desktopCollapsed = localStorage.getItem('servicehub.sidebar-collapsed') === 'true'; } catch { /* Storage may be disabled. */ }
 const expandedSidebarGroups = new Set();
 
+export function toggleDesktopSidebar(collapsed = !desktopCollapsed) {
+  desktopCollapsed = collapsed;
+  try { localStorage.setItem('servicehub.sidebar-collapsed', String(collapsed)); } catch { /* Preference is optional. */ }
+  syncMobileNavigation();
+}
+
+export function openSidebarGroup(groupId) {
+  toggleDesktopSidebar(false);
+  expandedSidebarGroups.add(groupId);
+  const panel = document.getElementById(`sidebar-group-${groupId}`) || document.getElementById(`sidebar-subgroup-${groupId}`);
+  if (panel) panel.hidden = false;
+  document.querySelectorAll(`[data-group="${groupId}"][aria-expanded]`).forEach(button => button.setAttribute('aria-expanded', 'true'));
+  document.querySelector(`[data-group="${groupId}"][aria-expanded] svg:last-child`)?.classList.add('rotate-180');
+  document.querySelector(`[data-group="${groupId}"][aria-expanded]`)?.focus();
+}
+
 export function toggleMobileMenu(open) {
+  const wasOpen = mobileOpen;
   mobileOpen = typeof open === 'boolean' ? open : !mobileOpen;
   syncMobileNavigation();
+  if (!wasOpen && mobileOpen) document.querySelector('#sidebar [data-action="close-menu"]')?.focus();
+  if (wasOpen && !mobileOpen && window.innerWidth < 1024) document.querySelector('[data-action="open-menu"]')?.focus();
 }
 
 export function closeUserMenu() {
@@ -117,7 +139,15 @@ export function toggleSidebarGroup(groupId) {
 
 export function syncMobileNavigation() {
   const isMobile = window.innerWidth < 1024;
+  document.documentElement.classList.toggle('sidebar-collapsed', desktopCollapsed);
+  document.querySelectorAll('[data-action="toggle-desktop-sidebar"]').forEach(button => {
+    button.setAttribute('aria-expanded', String(!desktopCollapsed));
+    button.setAttribute('aria-label', desktopCollapsed ? 'ขยายเมนู' : 'ย่อเมนู');
+  });
+  document.querySelectorAll('.sidebar-expanded').forEach(element => { element.inert = !isMobile && desktopCollapsed; });
+  document.querySelectorAll('.sidebar-rail').forEach(element => { element.inert = isMobile || !desktopCollapsed; });
   document.body.style.overflow = isMobile && mobileOpen ? 'hidden' : '';
+  document.querySelectorAll('.app-shell').forEach(element => { element.inert = isMobile && mobileOpen; });
   const sidebarElement = document.getElementById('sidebar');
   const backdrop = document.getElementById('mobile-backdrop');
 
@@ -201,16 +231,18 @@ export function sidebar(currentModule, dashboard) {
   const logoUrl = window.serviceHubUrls?.logo || fallbackLogoUrl;
   return `
     <div id="mobile-backdrop" class="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-sm transition-opacity duration-300 motion-reduce:transition-none lg:hidden ${mobileOpen ? 'opacity-100 pointer-events-auto visible' : 'opacity-0 pointer-events-none invisible'}" data-action="close-menu" aria-hidden="true"></div>
-    <aside id="sidebar" role="complementary" aria-label="แถบเมนูหลัก" class="fixed inset-y-0 left-0 z-50 flex w-[266px] max-w-[calc(100vw-24px)] flex-col border-r border-line bg-white transition-transform duration-200 motion-reduce:transition-none lg:translate-x-0 lg:visible lg:pointer-events-auto ${mobileOpen ? 'translate-x-0 visible pointer-events-auto' : '-translate-x-full invisible pointer-events-none'}" ${mobileOpen ? 'aria-hidden="false"' : 'aria-hidden="true"'}>
-      <div class="flex h-[72px] items-center gap-3 border-b border-line px-5 sm:px-6">
+    <aside id="sidebar" role="complementary" aria-label="แถบเมนูหลัก" class="fixed inset-y-0 left-0 z-50 flex w-[296px] max-w-[calc(100vw-24px)] flex-col border-r border-line bg-white transition-transform duration-200 motion-reduce:transition-none lg:translate-x-0 lg:visible lg:pointer-events-auto ${mobileOpen ? 'translate-x-0 visible pointer-events-auto' : '-translate-x-full invisible pointer-events-none'}" ${mobileOpen ? 'aria-hidden="false"' : 'aria-hidden="true"'}>
+      <div class="sidebar-brand flex h-16 items-center gap-3 border-b border-line px-4">
         <img src="${logoUrl}" alt="ตราเทศบาลนครนนทบุรี" class="h-12 w-12 shrink-0 object-contain drop-shadow-sm">
-        <div class="min-w-0 flex-1"><div class="text-[15px] font-bold tracking-tight text-ink leading-snug">เทศบาลนครนนทบุรี</div><div class="text-[11px] font-medium tracking-wide text-muted">ฐานข้อมูลฝ่ายบริการ</div></div>
+        <div class="sidebar-brand-text min-w-0 flex-1"><div class="text-[15px] font-bold tracking-tight text-ink leading-snug">เทศบาลนครนนทบุรี</div><div class="text-[11px] font-medium tracking-wide text-muted">ฐานข้อมูลฝ่ายบริการ</div></div>
         <button type="button" class="ml-auto flex min-h-11 min-w-11 items-center justify-center rounded-lg p-2 text-muted lg:hidden" data-action="close-menu" aria-label="ปิดเมนู">${icon('close', 20)}</button>
       </div>
-      <nav aria-label="เมนูหลัก" role="navigation" class="scrollbar-thin flex-1 overflow-y-auto px-4 pb-6 pt-6">
+      ${sidebarRail(currentModule, dashboard)}
+      <nav aria-label="เมนูหลัก" role="navigation" class="sidebar-expanded scrollbar-thin flex-1 overflow-y-auto px-3 pb-6 pt-4">
         <a href="#/dashboard" class="mb-2 flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold ${dashboard ? 'nav-active' : 'text-[#657772] hover:bg-[#f4f7f4] hover:text-ink'}" ${dashboard ? 'aria-current="page"' : ''}>${icon('grid', 19)}<span>แดชบอร์ดฝ่ายบริการ</span></a>
         ${sidebarItems.map((item) => sidebarNavItem(item, currentModule)).join('')}
         ${!can('road-washings.view') && can('cleaning-zones.view') ? `<a href="${ZONE_HREF}" class="mb-1 flex min-h-11 items-center rounded-xl px-3 py-2.5 text-sm font-semibold ${currentModule === 'cleaning-zones' ? 'nav-active' : 'text-[#657772] hover:bg-[#f4f7f4]'}">เขตรักษาความสะอาด</a>` : ''}
+        ${!can('drain-cleanings.view') && can('drain-work-types.view') ? `<a href="#/drain-work-types" class="flex min-h-11 items-center rounded-xl px-3 py-2.5 text-sm">ประเภทงานลอกท่อ</a>` : ''}
         ${!can('waste-collections.view') && can('waste-types.view') ? `<a href="${WASTE_TYPE_HREF}" class="mb-1 flex min-h-11 items-center rounded-xl px-3 py-2.5 text-sm font-semibold ${currentModule === 'waste-types' ? 'nav-active' : 'text-[#657772] hover:bg-[#f4f7f4]'}">ประเภทขยะมูลฝอย</a>` : ''}
         <a href="#/reports" class="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold ${currentModule === 'reports' ? 'nav-active' : 'text-[#657772] hover:bg-[#f4f7f4] hover:text-ink'}" ${currentModule === 'reports' ? 'aria-current="page"' : ''}>${icon('chart', 18)}รายงาน</a>
         ${can('audit-logs.view') ? `<a href="#/audit-logs" class="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold ${currentModule === 'audit-logs' ? 'nav-active' : 'text-[#657772] hover:bg-[#f4f7f4] hover:text-ink'}">${icon('info', 18)}ประวัติการแก้ไข</a>` : ''}
@@ -232,8 +264,9 @@ export function topbar(breadcrumbs = []) {
   const primaryRole = (user.roles || [])[0] || 'staff';
 
   return `
-    <header role="banner" class="app-header sticky top-0 z-30 flex h-[72px] w-full max-w-full min-w-0 items-center justify-between border-b border-line bg-white/95 px-3.5 backdrop-blur-sm sm:px-7 lg:px-9">
+    <header role="banner" class="app-header sticky top-0 z-30 flex h-14 lg:h-16 w-full max-w-full min-w-0 items-center justify-between border-b border-line bg-white/95 px-4 sm:px-6">
       <div class="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
+        <button type="button" data-action="toggle-desktop-sidebar" class="desktop-sidebar-toggle min-h-11 min-w-11 items-center justify-center rounded-lg text-muted hover:bg-canvas" aria-label="${desktopCollapsed ? 'ขยายเมนู' : 'ย่อเมนู'}" aria-expanded="${!desktopCollapsed}" aria-controls="sidebar">${icon('menu', 20)}</button>
         <button type="button" class="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl p-2 text-ink hover:bg-canvas lg:hidden" data-action="open-menu" aria-label="เปิดเมนู" aria-expanded="${mobileOpen}" aria-controls="sidebar">${icon('menu', 22)}</button>
         <nav aria-label="เส้นทางหน้า" role="navigation" class="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-2 overflow-hidden whitespace-nowrap text-xs text-muted sm:text-sm">
           <a class="shrink-0 hover:text-primary" href="#/dashboard">หน้าหลัก</a>
@@ -244,14 +277,14 @@ export function topbar(breadcrumbs = []) {
         <span class="hidden rounded-full border border-[#cfe9dd] bg-[#f0faf4] px-3 py-1 text-[11px] font-bold text-primary sm:inline-flex">ข้อมูลจริง</span>
         <div id="user-menu-container" class="relative">
           <button type="button" data-action="toggle-user-menu" id="user-menu-button" aria-haspopup="menu" aria-expanded="${userMenuOpen}" aria-controls="user-menu-dropdown" class="flex min-h-11 items-center gap-2 rounded-xl border border-line bg-white px-2.5 py-1.5 text-xs font-semibold text-ink transition hover:border-[#afcfc0] hover:bg-[#f0f8f2] focus:outline-none focus:ring-2 focus:ring-primary/20 ${userMenuOpen ? 'border-primary bg-[#f0f8f2]' : ''}" aria-label="เมนูผู้ใช้งาน ${esc(user.name || user.username)}">
-            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#177a67] to-[#0e6253] text-xs font-bold text-white shadow-sm">${esc(initial)}</span>
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary text-xs font-bold text-white shadow-sm">${esc(initial)}</span>
             <span class="hidden max-w-[130px] truncate sm:inline">${esc(user.name || user.username)}</span>
             ${icon('chevronDown', 14, `shrink-0 text-[#687b74] transition-transform duration-150 ${userMenuOpen ? 'rotate-180' : ''}`)}
           </button>
           <div id="user-menu-dropdown" class="absolute right-0 top-full mt-2 w-64 max-w-[calc(100vw-24px)] rounded-2xl border border-line bg-white p-2 shadow-xl z-50 transition-all ${userMenuOpen ? 'opacity-100 visible translate-y-0 pointer-events-auto' : 'opacity-0 invisible -translate-y-1 pointer-events-none'}" role="menu" aria-labelledby="user-menu-button" ${userMenuOpen ? '' : 'hidden'}>
             <div class="rounded-xl bg-[#f8faf8] p-3 border border-[#edf3ee]">
               <div class="flex items-center gap-3">
-                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#177a67] to-[#0e6253] text-sm font-bold text-white shadow-sm">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-sm font-bold text-white shadow-sm">
                   ${esc(initials)}
                 </div>
                 <div class="min-w-0 flex-1">
@@ -286,9 +319,11 @@ export function topbar(breadcrumbs = []) {
 }
 
 export function renderShell(content, currentModule = null, crumbs = [], dashboard = false) {
+  document.documentElement.classList.toggle('sidebar-collapsed', desktopCollapsed);
+  queueMicrotask(syncMobileNavigation);
   return `
     ${sidebar(currentModule, dashboard)}
-    <div class="app-shell min-h-screen w-full max-w-full min-w-0 lg:pl-[266px]">
+    <div class="app-shell min-h-screen w-full max-w-full min-w-0 lg:pl-[296px]">
       ${topbar(crumbs)}
       <main id="main-content" role="main" tabindex="-1" class="app-content mx-auto w-full min-w-0 max-w-[1510px] px-3.5 pb-16 pt-5 sm:px-7 sm:pt-7 lg:px-9">
         ${content}
@@ -298,6 +333,141 @@ export function renderShell(content, currentModule = null, crumbs = [], dashboar
   `;
 }
 
+// Keep navigation nodes alive while pages render loading and completed states.
+export function mountShell(container, content, currentModule = null, crumbs = [], dashboard = false) {
+  const navigationKey = JSON.stringify([currentModule, dashboard, window.serviceHubUser?.roles, window.serviceHubUser?.permissions]);
+  const headerKey = JSON.stringify([crumbs, window.serviceHubUser]);
+  const existingSidebar = container.querySelector('#sidebar');
+  const existingMain = container.querySelector('#main-content');
+  if (!existingSidebar || !existingMain || !container.querySelector('.app-shell')) {
+    container.innerHTML = renderShell(content, currentModule, crumbs, dashboard);
+  } else {
+    if (container.dataset.navigationKey !== navigationKey || container.dataset.headerKey !== headerKey) {
+      const template = document.createElement('template');
+      template.innerHTML = renderShell('', currentModule, crumbs, dashboard);
+      if (container.dataset.navigationKey !== navigationKey) {
+        reconcileNavigation(existingSidebar, template.content.querySelector('#sidebar'), true);
+      }
+      if (container.dataset.headerKey !== headerKey) {
+        container.querySelector('.app-header').replaceWith(template.content.querySelector('.app-header'));
+      }
+    }
+    existingMain.innerHTML = content;
+  }
+  container.dataset.navigationKey = navigationKey;
+  container.dataset.headerKey = headerKey;
+  syncMobileNavigation();
+}
+
+function reconcileNavigation(current, next, sidebarRoot = false) {
+  if (current.isEqualNode(next)) return;
+  if (current.nodeType !== 1) {
+    if (current.nodeValue !== next.nodeValue) current.nodeValue = next.nodeValue;
+    return;
+  }
+  // Visibility and motion classes on the sidebar are controlled by syncMobileNavigation.
+  const transient = name => sidebarRoot && ['class', 'aria-hidden', 'inert'].includes(name);
+  for (const attribute of [...current.attributes]) {
+    if (!transient(attribute.name) && !next.hasAttribute(attribute.name)) current.removeAttribute(attribute.name);
+  }
+  for (const attribute of next.attributes) {
+    if (!transient(attribute.name) && current.getAttribute(attribute.name) !== attribute.value) current.setAttribute(attribute.name, attribute.value);
+  }
+  const currentChildren = [...current.childNodes];
+  const nextChildren = [...next.childNodes];
+  for (let index = 0; index < Math.max(currentChildren.length, nextChildren.length); index++) {
+    const child = currentChildren[index], replacement = nextChildren[index];
+    if (!replacement) child.remove();
+    else if (!child) current.append(replacement.cloneNode(true));
+    else if (child.nodeType !== replacement.nodeType || child.nodeName !== replacement.nodeName) child.replaceWith(replacement.cloneNode(true));
+    else reconcileNavigation(child, replacement);
+  }
+}
+
 export function initShell() {
+  if (shellInitialized) return;
+  shellInitialized = true;
   window.addEventListener('resize', syncMobileNavigation);
+  document.addEventListener('keydown', navigationKeydown);
+  document.addEventListener('mouseover', showNavTooltip);
+  document.addEventListener('focusin', event => {
+    showNavTooltip(event);
+    if (userMenuOpen && !event.target.closest('#user-menu-container')) closeUserMenu();
+  });
+  document.addEventListener('mouseout', hideNavTooltip);
+  document.addEventListener('focusout', hideNavTooltip);
+  document.addEventListener('click', event => {
+    if (mobileOpen && event.target.closest('#sidebar a[href]')) toggleMobileMenu(false);
+    const trigger = event.target.closest('[data-action]');
+    const action = trigger?.dataset.action;
+    if (action === 'toggle-desktop-sidebar') { hideNavTooltip(); toggleDesktopSidebar(); }
+    if (action === 'expand-sidebar-group') { hideNavTooltip(); openSidebarGroup(trigger.dataset.group); }
+    if (action === 'toggle-sidebar-group' || action === 'toggle-sidebar-subgroup') {
+      toggleSidebarGroup(trigger.dataset.group);
+      const expanded = expandedSidebarGroups.has(trigger.dataset.group);
+      trigger.setAttribute('aria-expanded', String(expanded));
+      trigger.setAttribute('aria-label', `${expanded ? 'ปิด' : 'เปิด'}เมนูย่อย`);
+      const panel = document.getElementById(trigger.getAttribute('aria-controls'));
+      if (panel) panel.hidden = !expanded;
+      trigger.querySelector('svg:last-child')?.classList.toggle('rotate-180', expanded);
+    }
+  });
+}
+
+function sidebarRail(currentModule, dashboard) {
+  const entries = [{label:'แดชบอร์ดฝ่ายบริการ', icon:'grid', href:'#/dashboard', active:dashboard}];
+  for (const item of sidebarItems) {
+    if (item.type === 'group' ? !item.children.some(child => can(`${child.module}.view`)) : !can(`${item.module}.view`)) continue;
+    entries.push({label:item.label, icon:item.icon, group:item.type === 'group' ? item.id : item.children?.some(child => can(`${child.module}.view`)) ? item.module : null, href:item.module ? moduleHref(item.module) : null, active:currentModule === item.module || item.children?.some(child => child.module === currentModule || child.children?.some(nested => nested.module === currentModule))});
+  }
+  if (!can('road-washings.view') && can('cleaning-zones.view')) entries.push({label:'เขตรักษาความสะอาด',icon:'road',href:ZONE_HREF,active:currentModule==='cleaning-zones'});
+  if (!can('drain-cleanings.view') && can('drain-work-types.view')) entries.push({label:'ประเภทงานลอกท่อ',icon:'droplet',href:'#/drain-work-types',active:currentModule==='drain-work-types'});
+  if (!can('waste-collections.view') && can('waste-types.view')) entries.push({label:'ประเภทขยะมูลฝอย',icon:'recycle',href:WASTE_TYPE_HREF,active:currentModule==='waste-types'});
+  entries.push({label:'รายงาน',icon:'chart',href:'#/reports',active:currentModule==='reports'});
+  if (can('audit-logs.view')) entries.push({label:'ประวัติการแก้ไข',icon:'info',href:'#/audit-logs',active:currentModule==='audit-logs'});
+  if (canManageUsers()) entries.push({label:'จัดการผู้ใช้งาน',icon:'users',href:'#/users',active:currentModule==='users'});
+  entries.push({label:'โปรไฟล์ของฉัน',icon:'users',href:'#/profile',active:currentModule==='profile'});
+  return `<nav class="sidebar-rail" aria-label="เมนูแบบย่อ">${entries.map(entry => {
+    const attrs = `data-nav-label="${esc(entry.label)}" aria-label="${esc(entry.label)}" class="rail-item ${entry.active ? 'nav-active' : ''}"`;
+    return entry.group ? `<button type="button" data-action="expand-sidebar-group" data-group="${entry.group}" ${attrs}>${icon(entry.icon,20)}</button>` : `<a href="${entry.href}" ${attrs} ${entry.active ? 'aria-current="page"' : ''}>${icon(entry.icon,20)}</a>`;
+  }).join('')}</nav>`;
+}
+
+function hideNavTooltip() {
+  document.getElementById('nav-tooltip')?.remove();
+  document.querySelectorAll('[aria-describedby="nav-tooltip"]').forEach(element => element.removeAttribute('aria-describedby'));
+}
+function showNavTooltip(event) {
+  const target = event.target.closest?.('[data-nav-label]');
+  if (!target || window.innerWidth < 1024 || !desktopCollapsed) return;
+  hideNavTooltip();
+  const tooltip = document.createElement('div');
+  tooltip.id = 'nav-tooltip';
+  tooltip.role = 'tooltip';
+  tooltip.textContent = target.dataset.navLabel;
+  tooltip.className = 'nav-tooltip';
+  const rect = target.getBoundingClientRect();
+  tooltip.style.top = `${Math.min(window.innerHeight - 80, Math.max(8,rect.top))}px`;
+  target.setAttribute('aria-describedby', 'nav-tooltip');
+  document.body.append(tooltip);
+}
+
+function navigationKeydown(event) {
+  if (event.key === 'Escape') {
+    hideNavTooltip();
+    if (userMenuOpen) { closeUserMenu(); document.getElementById('user-menu-button')?.focus(); }
+    toggleMobileMenu(false);
+  }
+  const menu = document.getElementById('user-menu-dropdown');
+  if (userMenuOpen && ['ArrowDown','ArrowUp','Home','End'].includes(event.key)) {
+    const items = [...menu.querySelectorAll('[role="menuitem"]')];
+    const current = items.indexOf(document.activeElement);
+    const index = event.key === 'Home' ? 0 : event.key === 'End' ? items.length-1 : (current + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+    event.preventDefault(); items[index]?.focus();
+  }
+  if (event.key === 'Tab' && mobileOpen && window.innerWidth < 1024) {
+    const items = [...document.querySelectorAll('#sidebar a[href], #sidebar button')].filter(element => !element.closest('[hidden],.sidebar-rail'));
+    if (event.shiftKey && document.activeElement === items[0]) {event.preventDefault();items.at(-1)?.focus();}
+    else if (!event.shiftKey && document.activeElement === items.at(-1)) {event.preventDefault();items[0]?.focus();}
+  }
 }

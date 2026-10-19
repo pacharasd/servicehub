@@ -1,0 +1,49 @@
+/* LINE Seed Sans TH v1.003: original Regular and Bold, SIL OFL 1.1. */
+@font-face {
+  font-family: 'LINE Seed Sans TH'; font-style: normal; font-weight: 400;
+  font-display: swap; src: url('./assets/fonts/line-seed/LINESeedSansTH_W_Rg.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'LINE Seed Sans TH'; font-style: normal; font-weight: 700;
+  font-display: swap; src: url('./assets/fonts/line-seed/LINESeedSansTH_W_Bd.woff2') format('woff2');
+}
+
+:root {
+  --type-page-size: 1.75rem; --type-page-mobile-size: 1.5rem;
+  --type-section-size: 1.125rem; --type-card-size: .9375rem;
+  --type-body-size: .875rem; --type-helper-size: .8125rem; --type-caption-size: .75rem;
+  --type-kpi-size: 2rem;
+  --type-regular: 400; --type-bold: 700;
+  --type-body-leading: 1.6; --type-heading-leading: 1.5;
+}
+html { font-size: 100%; }
+body {
+  font-size: var(--type-body-size); font-weight: var(--type-regular);
+  line-height: var(--type-body-leading); letter-spacing: normal; font-synthesis: none;
+}
+/* The chosen family has no medium/semibold masters. Keep real 400/700 weights. */
+.font-medium, .font-semibold { font-weight: var(--type-regular); }
+p.font-bold, span.font-bold, label.font-bold,
+a.font-bold:not(.bg-primary), button.font-bold:not([type="submit"]):not(.bg-primary) { font-weight: var(--type-regular); }
+.tracking-wide, .tracking-wider, .tracking-tight, [class*="tracking-["] { letter-spacing: normal; }
+.text-xs { font-size: var(--type-helper-size); line-height: var(--type-body-leading); }
+[class~="text-[10px]"], [class~="text-[11px]"] { font-size: var(--type-caption-size); line-height: var(--type-body-leading); }
+.type-page-title, h1[class] { font-size: var(--type-page-mobile-size); font-weight: var(--type-bold); line-height: 1.4; letter-spacing: normal; }
+.type-section-title, h2[class] { font-size: var(--type-section-size); font-weight: var(--type-bold); line-height: var(--type-heading-leading); }
+.type-card-title, h3[class] { font-size: var(--type-card-size); font-weight: var(--type-bold); line-height: var(--type-heading-leading); }
+.type-body { font-size: var(--type-body-size); font-weight: var(--type-regular); line-height: var(--type-body-leading); }
+.type-helper { font-size: var(--type-helper-size); font-weight: var(--type-regular); line-height: var(--type-body-leading); }
+.type-kpi, .dashboard-kpi-number.type-kpi { font-size: var(--type-kpi-size); font-weight: var(--type-bold); line-height: 1.25; font-variant-numeric: tabular-nums; }
+.type-caption { font-size: var(--type-caption-size); font-weight: var(--type-regular); line-height: var(--type-body-leading); }
+.type-primary-action, a.bg-primary, button[type="submit"] { font-weight: var(--type-bold); }
+.type-table-heading, thead th[class] { font-size: var(--type-body-size); font-weight: var(--type-bold); line-height: var(--type-heading-leading); }
+td, td strong { font-size: var(--type-body-size); font-weight: var(--type-regular); line-height: var(--type-body-leading); }
+label, button, input, select, textarea { font-weight: var(--type-regular); }
+button, input, select, textarea, .field { font-size: var(--type-body-size); line-height: 1.5; }
+#sidebar :is(a,button), .type-navigation { font-size: var(--type-body-size); font-weight: var(--type-regular); line-height: 1.5; }
+#sidebar .sidebar-brand-text > :first-child { font-size: var(--type-card-size); font-weight: var(--type-bold); line-height: 1.5; }
+.dashboard-card p.text-2xl { font-weight: var(--type-bold); }
+.app-header nav, .app-header nav .font-semibold { font-weight: var(--type-regular); }
+.field { min-height: 44px; }
+@media (min-width: 768px) { .type-page-title, h1[class] { font-size: var(--type-page-size); } }
+@media print { .type-page-title, h1[class] { font-size: var(--type-page-size); } }

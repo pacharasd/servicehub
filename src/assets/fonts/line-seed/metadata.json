@@ -1,0 +1,20 @@
+[
+  {
+    "file": "LINESeedSansTH_Bd.ttf",
+    "weight": 700,
+    "unitsPerEm": 1000,
+    "ascent": 1144,
+    "descent": -440,
+    "lineGap": 0,
+    "tabularFeature": false
+  },
+  {
+    "file": "LINESeedSansTH_Rg.ttf",
+    "weight": 400,
+    "unitsPerEm": 1000,
+    "ascent": 1144,
+    "descent": -440,
+    "lineGap": 0,
+    "tabularFeature": false
+  }
+]

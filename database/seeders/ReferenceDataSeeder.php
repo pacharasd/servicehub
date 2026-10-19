@@ -36,7 +36,7 @@ class ReferenceDataSeeder extends Seeder
             'road-washings', 'waterway-cleanings', 'road-sweepings',
             'outsourced-cleanings', 'waste-collections', 'drain-cleanings',
             'septic-pumpings', 'septic-treatments', 'waste-management-projects',
-            'cleaning-zones', 'waste-types',
+            'cleaning-zones', 'waste-types', 'drain-work-types',
         ];
 
         foreach ($modules as $module) {

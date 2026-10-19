@@ -10,10 +10,12 @@ import { pageHeading, primaryButton, outlinedButton } from '../utils/layout.js';
 import { showConfirmModal } from '../components/confirmModal.js';
 import { showToast } from '../components/toast.js';
 import { navigate } from '../router.js';
+import { drainTypeListPage, drainTypeFormPage, drainTypeDetailPage } from './drainWorkTypes.js';
 import { invalidateActivityReference } from './activities.js';
 
 let zonesData = [];
 let wasteTypesData = [];
+let drainTypesData = [];
 const loadedReferences = new Set();
 
 export async function refreshReferenceData(type) {
@@ -21,6 +23,7 @@ export async function refreshReferenceData(type) {
   const records = await allPages(apiReferenceUrl(type));
   if (type === 'cleaning-zones') zonesData = records;
   if (type === 'waste-types') wasteTypesData = records;
+  if (type === 'drain-work-types') drainTypesData = records;
   loadedReferences.add(type);
 }
 
@@ -322,7 +325,7 @@ export async function deleteReference(type, id, name, usage, { navigate: nav = n
     return;
   }
 
-  const noun = type === 'cleaning-zones' ? 'เขต' : 'ประเภทขยะ';
+  const noun = type === 'cleaning-zones' ? 'เขต' : type === 'drain-work-types' ? 'ประเภทงานลอกท่อ' : 'ประเภทขยะ';
   const confirmed = await showConfirmModal({
     title: `ยืนยันการลบ${noun}`,
     message: `คุณต้องการลบ "${name}" ออกจากระบบใช่หรือไม่?`,
@@ -360,9 +363,9 @@ export async function submitReference(form, type) {
   } catch (error) {
     showToast(error.message || 'เกิดข้อผิดพลาดในการบันทึกข้อมูล', 'error');
     const fields = error.fieldErrors || Object.fromEntries(Object.entries(error.fields || {}).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]));
-    const list = type === 'cleaning-zones' ? zonesData : wasteTypesData;
+    const list = type === 'drain-work-types' ? drainTypesData : type === 'cleaning-zones' ? zonesData : wasteTypesData;
     const existing = list.find((item) => String(item.id) === id) || null;
-    const content = type === 'cleaning-zones'
+    const content = type === 'drain-work-types' ? drainTypeFormPage(existing, fields, data) : type === 'cleaning-zones'
       ? zoneFormPage(existing, fields, data)
       : wasteTypeFormPage(existing, fields, data);
     const mainEl = document.querySelector('#main-content');
@@ -375,6 +378,14 @@ export async function renderReferencesView(type, ctx) {
     await refreshReferenceData(type);
   }
 
+  if (type === 'drain-work-types') {
+    if (ctx.parts.length === 1) return drainTypeListPage(ctx.params, drainTypesData);
+    if (ctx.parts[1] === 'new') return can(type+'.create') ? drainTypeFormPage() : '<p role="alert">คุณไม่มีสิทธิ์เพิ่มประเภทงาน</p>';
+    const item = drainTypesData.find(row => String(row.id) === decodeURIComponent(ctx.parts[1]));
+    if (!item) return '<p>ไม่พบประเภทงานที่ต้องการ</p>';
+    if (ctx.parts[2] === 'edit') return can(type+'.update') ? drainTypeFormPage(item) : '<p role="alert">คุณไม่มีสิทธิ์แก้ไขประเภทงาน</p>';
+    return drainTypeDetailPage(item);
+  }
   const isZone = type === 'cleaning-zones';
   const list = isZone ? zonesData : wasteTypesData;
 

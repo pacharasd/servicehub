@@ -9,6 +9,7 @@ class ServiceCatalog
     public const REFERENCES = [
         'cleaning-zones' => 'cleaning_zones',
         'waste-types' => 'waste_types',
+        'drain-work-types' => 'drain_work_types',
     ];
 
     public const ACTIVITIES = [
@@ -17,7 +18,7 @@ class ServiceCatalog
         'road-sweepings' => ['table' => 'road_sweepings',          'group' => 'cleaning',   'fields' => ['road' => 255, 'distance_km' => 'decimal']],
         'outsourced-cleanings' => ['table' => 'outsourced_cleanings',    'group' => 'cleaning',   'fields' => ['location' => 500, 'distance_km' => 'decimal', 'community' => 255]],
         'waste-collections' => ['table' => 'waste_collections',       'group' => 'waste',      'fields' => ['end_date' => 'date', 'source' => 500, 'waste_type_id' => 'waste_types', 'weight' => 'decimal', 'hazardous_waste_name' => 255]],
-        'drain-cleanings' => ['table' => 'drain_cleanings',         'group' => 'sanitation', 'fields' => ['location' => 500, 'distance_km' => 'decimal', 'sediment_quantity' => 'decimal']],
+        'drain-cleanings' => ['table' => 'drain_cleanings',         'group' => 'sanitation', 'fields' => ['location' => 500, 'drain_work_type_id' => 'drain_work_types', 'distance_km' => 'decimal', 'sediment_quantity' => 'decimal']],
         'septic-pumpings' => ['table' => 'septic_pumpings',         'group' => 'sanitation', 'fields' => ['location' => 500, 'volume' => 'decimal', 'fee_amount' => 'decimal']],
         'septic-treatments' => ['table' => 'septic_treatments',       'group' => 'sanitation', 'fields' => ['sludge_quantity' => 'decimal', 'fertilizer_remaining' => 'decimal', 'microbial_note' => 'text']],
         'waste-management-projects' => ['table' => 'waste_management_projects', 'group' => 'projects', 'fields' => ['project_name' => 500, 'communities_count' => 'integer', 'participants_count' => 'integer']],
@@ -51,7 +52,7 @@ class ServiceCatalog
                 'date' => ['required', 'date_format:Y-m-d', 'after_or_equal:service_date'],
                 'integer' => ['required', 'integer', 'min:0', 'max:4294967295'],
                 'text' => ['required', 'string', 'max:10000'],
-                'cleaning_zones', 'waste_types' => ['required', 'integer', Rule::exists($type, 'id')->where('is_active', true)],
+                'cleaning_zones', 'waste_types', 'drain_work_types' => ['required', 'integer', Rule::exists($type, 'id')->where('is_active', true)],
                 default => ['required', 'string', 'max:'.$type],
             };
         }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Support\DrainWorkTypePermissions;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -88,3 +89,8 @@ Artisan::command('servicehub:permissions:sync', function () {
 
     return 0;
 })->purpose('Synchronize all system permissions, roles, and reference catalogs');
+
+Artisan::command('servicehub:install-drain-work-types', function () {
+    DrainWorkTypePermissions::install();
+    $this->info('Drain work type permissions added; existing permissions preserved.');
+})->purpose('Add drain work type permissions without resetting existing grants');

@@ -15,12 +15,11 @@ import { initThaiDatePickers, syncThaiDateInputs } from './components/thaiDatePi
 import { debounce } from './utils/filter.js';
 import {
   initShell,
-  renderShell,
+  mountShell,
   toggleMobileMenu,
   closeUserMenu,
   toggleUserMenu,
   expandActiveSidebarGroup,
-  toggleSidebarGroup,
 } from './components/navigation.js';
 
 // Core Landing & Consolidated Feature Views
@@ -100,7 +99,7 @@ function renderDashboard() {
     number,
     moduleHref,
   });
-  app.innerHTML = renderShell(content, null, [{ label: 'แดชบอร์ดฝ่ายบริการ', current: true }], true);
+  mountShell(app, content, null, [{ label: 'แดชบอร์ดฝ่ายบริการ', current: true }], true);
   initCustomSelects();
 }
 
@@ -152,7 +151,7 @@ async function renderReports(parts, params) {
     moduleHref,
   });
   const crumbs = module ? [{ label: 'รายงาน', href: '#/reports' }, { label: module.short, current: true }] : [{ label: 'รายงาน', current: true }];
-  app.innerHTML = renderShell(content, 'reports', crumbs);
+  mountShell(app, content, 'reports', crumbs);
   initCustomSelects();
 }
 
@@ -171,7 +170,7 @@ const routes = {
       return;
     }
     expandActiveSidebarGroup('users');
-    app.innerHTML = renderShell(renderUsersView(ctx), 'users', [{ label: 'จัดการผู้ใช้งาน', current: true }]);
+    mountShell(app, renderUsersView(ctx), 'users', [{ label: 'จัดการผู้ใช้งาน', current: true }]);
     initCustomSelects();
   },
   module: async (ctx) => {
@@ -185,11 +184,11 @@ const routes = {
     const mod = modules.find((m) => m.id === moduleId);
     const crumbs = mod ? [{ label: mod.short, current: true }] : [];
     if (document.querySelector('#filter-form')?.dataset.module !== moduleId || ctx.parts.length > 2) {
-      app.innerHTML = renderShell('<section class="panel-shadow rounded-2xl border border-line bg-white p-6" role="status">กำลังโหลดข้อมูล...</section>', moduleId, crumbs);
+      mountShell(app, '<section class="panel-shadow rounded-2xl border border-line bg-white p-6" role="status">กำลังโหลดข้อมูล...</section>', moduleId, crumbs);
     }
     const content = await renderActivitiesView(ctx);
     if (!ctx.isCurrent()) return;
-    app.innerHTML = renderShell(content, moduleId, crumbs);
+    mountShell(app, content, moduleId, crumbs);
     initCustomSelects();
   },
   'cleaning-zones': async (ctx) => {
@@ -200,8 +199,15 @@ const routes = {
     expandActiveSidebarGroup('cleaning-zones');
     const content = await renderReferencesView('cleaning-zones', ctx);
     if (!ctx.isCurrent()) return;
-    app.innerHTML = renderShell(content, 'cleaning-zones', [{ label: 'เขตรักษาความสะอาด', current: true }]);
+    mountShell(app, content, 'cleaning-zones', [{ label: 'เขตรักษาความสะอาด', current: true }]);
     initCustomSelects();
+  },
+  'drain-work-types': async (ctx) => {
+    if (!can('drain-work-types.view')) { mountShell(app, '<p role="alert">คุณไม่มีสิทธิ์ดูประเภทงานลอกท่อ</p>', 'drain-work-types'); return; }
+    expandActiveSidebarGroup('drain-work-types');
+    const content = await renderReferencesView('drain-work-types', ctx);
+    if (!ctx.isCurrent()) return;
+    mountShell(app, content, 'drain-work-types', [{label:'ประเภทงานลอกท่อ',current:true}]);
   },
   'waste-types': async (ctx) => {
     if (!can('waste-types.view')) {
@@ -211,12 +217,12 @@ const routes = {
     expandActiveSidebarGroup('waste-types');
     const content = await renderReferencesView('waste-types', ctx);
     if (!ctx.isCurrent()) return;
-    app.innerHTML = renderShell(content, 'waste-types', [{ label: 'ประเภทขยะมูลฝอย', current: true }]);
+    mountShell(app, content, 'waste-types', [{ label: 'ประเภทขยะมูลฝอย', current: true }]);
     initCustomSelects();
   },
   profile: async (ctx) => {
     expandActiveSidebarGroup('profile');
-    app.innerHTML = renderShell(renderProfileView(ctx), 'profile', [{ label: 'โปรไฟล์ของฉัน', current: true }]);
+    mountShell(app, renderProfileView(ctx), 'profile', [{ label: 'โปรไฟล์ของฉัน', current: true }]);
   },
   'audit-logs': async (ctx) => {
     if (!can('audit-logs.view')) {
@@ -226,7 +232,7 @@ const routes = {
     expandActiveSidebarGroup('audit-logs');
     const content = await renderAuditLogsView(ctx);
     if (!ctx.isCurrent()) return;
-    app.innerHTML = renderShell(content, 'audit-logs', [{ label: 'ประวัติการแก้ไข', current: true }]);
+    mountShell(app, content, 'audit-logs', [{ label: 'ประวัติการแก้ไข', current: true }]);
   },
   reports: async (ctx) => {
     expandActiveSidebarGroup('reports');
@@ -241,28 +247,6 @@ const routes = {
  * Global Keyboard & Interaction Shortcuts
  */
 function bindGlobalEvents() {
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      closeUserMenu();
-      toggleMobileMenu(false);
-    }
-    if (e.key === 'Tab' && window.innerWidth < 1024) {
-      const sidebar = document.getElementById('sidebar');
-      if (sidebar && sidebar.classList.contains('translate-x-0')) {
-        const links = [...sidebar.querySelectorAll('a[href], button:not([disabled])')].filter((el) => !el.closest('[hidden]'));
-        if (links.length) {
-          if (e.shiftKey && document.activeElement === links[0]) {
-            e.preventDefault();
-            links[links.length - 1]?.focus();
-          } else if (!e.shiftKey && document.activeElement === links[links.length - 1]) {
-            e.preventDefault();
-            links[0]?.focus();
-          }
-        }
-      }
-    }
-  });
-
   document.addEventListener('click', async (e) => {
     const trigger = e.target.closest('[data-action]');
 
@@ -294,14 +278,6 @@ function bindGlobalEvents() {
       closeUserMenu();
       return;
     }
-    if (action === 'toggle-sidebar-group' || action === 'toggle-sidebar-subgroup') {
-      toggleSidebarGroup(trigger.dataset.group);
-      trigger.setAttribute('aria-expanded', String(trigger.getAttribute('aria-expanded') !== 'true'));
-      const targetPanel = document.getElementById(trigger.getAttribute('aria-controls'));
-      if (targetPanel) targetPanel.hidden = !targetPanel.hidden;
-      trigger.querySelector('svg:last-child')?.classList.toggle('rotate-180');
-      return;
-    }
     if (action === 'delete-activity') {
       const moduleId = trigger.dataset.module;
       const recordId = trigger.dataset.id;
@@ -325,6 +301,32 @@ function bindGlobalEvents() {
     }
     if (action === 'print-report') {
       window.print();
+      return;
+    }
+    if (action === 'download-report') {
+      e.preventDefault();
+      if (trigger.dataset.downloading) return;
+      trigger.dataset.downloading = 'true';
+      trigger.setAttribute('aria-busy', 'true');
+      try {
+        const response = await fetch(trigger.href, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+        if (!response.ok) {
+          const body = await response.json().catch(() => ({}));
+          const validation = Object.values(body.errors || {}).flat()[0];
+          throw new Error(response.status === 422 ? validation || 'กรุณาตรวจช่วงวันที่' : response.status === 429 ? `คำขอมากเกินไป กรุณารอ ${response.headers.get('Retry-After') || 60} วินาทีแล้วลองใหม่` : response.status === 403 ? 'คุณไม่มีสิทธิ์ส่งออกรายงานนี้' : 'ดาวน์โหลดรายงานไม่สำเร็จ กรุณาลองอีกครั้ง');
+        }
+        const url = URL.createObjectURL(await response.blob());
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'รายงานงานบริการ.xlsx';
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (error) {
+        showToast(error.message || 'ดาวน์โหลดรายงานไม่สำเร็จ', 'error');
+      } finally {
+        delete trigger.dataset.downloading;
+        trigger.removeAttribute('aria-busy');
+      }
       return;
     }
     if (action === 'retry-dashboard') {
@@ -380,6 +382,11 @@ function bindGlobalEvents() {
       e.preventDefault();
       submitActivity(e.target);
       return;
+    }
+    if (e.target.id === 'drainType-form') { e.preventDefault(); submitReference(e.target, 'drain-work-types'); return; }
+    if (e.target.id === 'drainType-filter') {
+      e.preventDefault(); const q = new FormData(e.target).get('q')?.trim();
+      navigate('/drain-work-types' + (q ? '?' + new URLSearchParams({q}) : '')); return;
     }
     if (e.target.id === 'zone-form') {
       e.preventDefault();
@@ -531,7 +538,7 @@ function bootstrap() {
     onDenied: (ctx) => {
       if (!ctx.isCurrent()) return;
       const content = `<section class="panel-shadow mx-auto max-w-lg rounded-2xl border border-line bg-white p-6 text-center" role="alert"><h1 class="text-xl font-bold">ไม่มีสิทธิ์เข้าถึงหน้านี้</h1><p class="mt-2 text-sm text-muted">บัญชีนี้ยังไม่ได้รับสิทธิ์ดูข้อมูลในหมวดที่เลือก</p><a href="#/dashboard" class="mt-5 inline-flex min-h-11 items-center font-bold text-primary underline">กลับแดชบอร์ด</a></section>`;
-      app.innerHTML = renderShell(content, null, [{ label: 'ไม่มีสิทธิ์เข้าถึง', current: true }]);
+      mountShell(app, content, null, [{ label: 'ไม่มีสิทธิ์เข้าถึง', current: true }]);
     },
     onError: (error, ctx) => {
       if (!ctx.isCurrent()) return;
@@ -543,7 +550,7 @@ function bootstrap() {
         ? `กรุณารอ${retryAfter > 0 ? ` ${retryAfter} วินาที` : 'สักครู่'}ก่อนลองใหม่`
         : error.status === 403 ? 'บัญชีนี้ยังไม่ได้รับสิทธิ์ดูข้อมูลในส่วนที่เลือก' : 'กรุณาลองใหม่อีกครั้ง หากยังพบปัญหาให้ติดต่อผู้ดูแลระบบ';
       const content = `<section class="panel-shadow mx-auto max-w-lg rounded-2xl border border-red-200 bg-white p-6 text-center" role="alert"><h1 class="text-xl font-bold">${title}</h1><p class="mt-2 text-sm text-muted">${description}</p><button type="button" data-action="retry-route" class="mt-5 min-h-11 rounded-xl border border-line px-4 font-bold text-primary">ลองอีกครั้ง</button></section>`;
-      app.innerHTML = renderShell(content, null, [{ label: 'โหลดหน้าไม่สำเร็จ', current: true }]);
+      mountShell(app, content, null, [{ label: 'โหลดหน้าไม่สำเร็จ', current: true }]);
     },
     afterRender: () => {
       initCustomSelects();

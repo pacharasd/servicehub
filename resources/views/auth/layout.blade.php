@@ -4,16 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#f4f8f5">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Sarabun:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet"></noscript>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'เข้าสู่ระบบ') — เทศบาลนครนนทบุรี</title>
     <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/favicon-32x32.png') }}">
     <link rel="icon" type="image/png" href="{{ asset('images/nonthaburi-logo.png') }}">
     <link rel="apple-touch-icon" href="{{ asset('images/favicon-192x192.png') }}">
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="{{ \Illuminate\Support\Facades\Vite::asset('src/assets/fonts/line-seed/LINESeedSansTH_W_Rg.woff2', 'dist') }}">
     @vite('src/auth.css', 'dist')
 </head>
 <body class="bg-[#f4f8f5] text-[#19302b]">

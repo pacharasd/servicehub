@@ -90,6 +90,7 @@ class ServiceReportTest extends TestCase
         $this->assertSame('กิโลเมตร', $data['data']['road-washings']['quantities']['distance_km'][0]['unit']);
         $this->assertSame('กิโลกรัม', $data['data']['waste-collections']['quantities']['weight'][0]['unit']);
         $this->assertSame('ลูกบาศก์เมตร', $data['data']['drain-cleanings']['quantities']['sediment_quantity'][0]['unit']);
+        $this->assertSame('เมตร', $data['data']['drain-cleanings']['quantities']['distance_km'][0]['unit']);
         $this->assertSame('ลูกบาศก์เมตร', $data['data']['septic-pumpings']['quantities']['volume'][0]['unit']);
         $this->assertEquals(5, $data['data']['septic-treatments']['quantities']['sludge_quantity'][0]['total']);
         $this->assertSame('กิโลกรัม', $data['data']['septic-treatments']['quantities']['sludge_quantity'][0]['unit']);

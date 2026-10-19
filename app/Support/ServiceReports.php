@@ -101,17 +101,8 @@ class ServiceReports
             if (! in_array($kind, ['decimal', 'integer'], true)) {
                 continue;
             }
-            $unit = match ($column) {
-                'distance_km' => $module === 'waterway-cleanings' ? 'เมตร' : 'กิโลเมตร',
-                'quantity' => 'ลูกบาศก์เมตร',
-                'weight' => 'กิโลกรัม',
-                'sediment_quantity', 'volume' => 'ลูกบาศก์เมตร',
-                'sludge_quantity', 'fertilizer_remaining' => 'กิโลกรัม',
-                'fee_amount' => 'บาท',
-                'communities_count' => 'ชุมชน',
-                'participants_count' => 'คน',
-                default => '',
-            };
+            $field = collect(ReportCatalog::module($module)['fields'])->firstWhere('name', $column);
+            $unit = $field['unit'] ?? '';
             if ($column === 'fertilizer_remaining') {
                 $latest = (clone $current)->orderByDesc('service_date')->orderByDesc('id')
                     ->first(['service_date', $column]);

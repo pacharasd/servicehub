@@ -44,7 +44,7 @@ class SaveServiceRecordRequest extends FormRequest
             return $rules;
         }
         foreach ($definition['fields'] as $column => $table) {
-            if (in_array($table, ['locations', 'communities', 'cleaning_zones', 'waste_types', 'measurement_units'], true)
+            if (in_array($table, ['locations', 'communities', 'cleaning_zones', 'waste_types', 'drain_work_types', 'measurement_units'], true)
                 && (string) $this->input($column) === (string) $record->{$column}) {
                 $rules[$column] = ['required', 'integer', Rule::exists($table, 'id')];
             }

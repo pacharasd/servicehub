@@ -1,3 +1,4 @@
+import catalog from '../resources/report-catalog.json' with { type: 'json' };
 import { renderDatePresets } from './utils/filter.js';
 
 export function reportBody({ module, params, data, meta, loading, error, modules, groups, can, esc, number, thaiDate, moduleHref }) {
@@ -11,10 +12,11 @@ export function reportBody({ module, params, data, meta, loading, error, modules
   } else if (params.has('month')) selected.set('month', month);
   const query = selected.size ? `?${selected}` : '';
   const reportHref = id => `#/reports/${encodeURIComponent(id)}${query}`;
-  const reportApi = id => window.serviceHubUrls.apiReportDetail.replace('__MODULE__', encodeURIComponent(id));
   const exportUrl = module
     ? window.serviceHubUrls.apiReportDetailExport.replace('__MODULE__', encodeURIComponent(module.id)) + query
     : window.serviceHubUrls.apiReportsExport + query;
+  const excelUrl = exportUrl + (query ? '&' : '?') + 'format=xlsx';
+  const exportLimited = !module && modules.some(m => can(`${m.id}.view`) && !can(`${m.id}.export`));
   const canExport = module ? can(`${module.id}.export`) : modules.some(m => can(`${m.id}.export`));
   const heading = module ? module.short : 'ภาพรวมงานบริการ';
   const period = meta?.period;
@@ -23,11 +25,12 @@ export function reportBody({ module, params, data, meta, loading, error, modules
   const count = module ? data?.count : meta?.total;
   const previous = module ? data?.previous_count : meta?.previous_total;
   const percent = previous === 0 || previous == null ? null : Math.round((count - previous) * 1000 / previous) / 10;
-  const metricList = (item, definition) => Object.entries(item?.quantities || {}).flatMap(([field, values]) => values.map(value => {
-    const label = definition.fields.find(entry => entry.name === field)?.label || field;
-    const latest = value.kind === 'latest';
-    return `<div class="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t border-line py-2 text-sm"><span class="text-muted">${esc(label)}${latest ? ' (ค่าล่าสุด)' : ''}</span><strong class="min-w-0 break-words text-ink">${value.total == null ? '—' : `${number(value.total)} ${esc(value.unit || '')}`}</strong>${latest && value.as_of ? `<span class="w-full text-xs text-muted">ณ ${thaiDate(value.as_of)}</span>` : ''}</div>`;
-  })).join('');
+  const definitionFor = id => catalog.modules.find(item => item.id === id);
+  const quantities = item => Object.entries(item?.quantities || {}).flatMap(([field, values]) => values.map(value => ({ field, ...value })));
+  const labelFor = (id, field) => definitionFor(id)?.fields.find(entry => entry.name === field)?.label || field;
+  const amount = value => value.total == null ? '—' : number(value.total);
+  const table = (headers, body, name) => `<div class="report-table-wrap min-w-0 max-w-full overflow-x-auto rounded-xl border border-line bg-white" role="region" aria-label="${esc(name)}" tabindex="0"><table class="report-table w-full min-w-[680px] border-collapse text-sm"><thead><tr>${headers.map(h => `<th scope="col" class="border-b border-line bg-[#eaf5ef] px-4 py-3 text-left font-bold">${h}</th>`).join('')}</tr></thead><tbody>${body}</tbody></table></div>`;
+  const cell = (text, numeric = false, extra = '') => `<td class="border-b border-line px-4 py-3 align-top ${numeric ? 'text-right tabular-nums' : 'break-words'}" ${extra}>${text}</td>`;
 
   const filter = `
     <section class="report-controls no-print panel-shadow rounded-2xl border border-line bg-white p-4 sm:p-5">
@@ -60,8 +63,10 @@ export function reportBody({ module, params, data, meta, loading, error, modules
           <button class="min-h-11 rounded-xl bg-primary px-5 font-bold text-white hover:bg-primary-dark" type="submit">แสดงรายงาน</button>
           <a href="#/reports${module ? `/${encodeURIComponent(module.id)}` : ''}" data-action="clear-filters" class="inline-flex min-h-11 items-center rounded-xl border border-line px-4 text-sm font-semibold text-muted hover:bg-[#f6faf7]">ล้างตัวกรอง</a>
           <button class="min-h-11 rounded-xl border border-line px-4 font-semibold" type="button" data-action="print-report">พิมพ์ / บันทึก PDF</button>
-          ${canExport ? `<a class="inline-flex min-h-11 items-center rounded-xl border border-line px-4 font-semibold text-primary" href="${esc(exportUrl)}">ส่งออกสรุป CSV</a>` : ''}
+          ${canExport ? `<a class="inline-flex min-h-11 items-center rounded-xl bg-primary px-4 font-bold text-white" data-action="download-report" href="${esc(excelUrl)}">ดาวน์โหลด Excel</a><details class="self-center"><summary class="cursor-pointer text-sm text-muted">ตัวเลือกไฟล์อื่น</summary><a class="inline-flex min-h-11 items-center px-3 text-sm text-primary" href="${esc(exportUrl)}">ส่งออกสรุป CSV</a></details>` : ''}
         </div>
+        ${exportLimited ? '<p class="text-sm text-muted">ไฟล์ส่งออกมีเฉพาะหมวดที่คุณมีสิทธิ์ส่งออก จึงอาจน้อยกว่าข้อมูลบนหน้าจอ</p>' : ''}
+        <p class="text-xs text-muted">Excel รวมสรุปและรายการจริง สูงสุด 5,000 รายการต่อครั้ง · PDF พิมพ์เฉพาะสรุป</p>
       </form>
     </section>
   `;
@@ -71,18 +76,26 @@ export function reportBody({ module, params, data, meta, loading, error, modules
   else if (error) content = `<section class="panel-shadow rounded-2xl border border-red-200 bg-red-50 p-6" role="alert"><p class="font-semibold text-red-700">${esc(error)}</p><button type="button" data-action="retry-report" class="no-print mt-3 min-h-11 rounded-xl border border-red-200 bg-white px-4 font-semibold">ลองอีกครั้ง</button></section>`;
   else if (!meta || !data) content = '<section class="panel-shadow rounded-2xl border border-line bg-white p-6 text-sm text-muted" role="status">กำลังเตรียมรายงาน…</section>';
   else {
-    const summary = `<section class="grid gap-3 sm:grid-cols-3"><div class="panel-shadow rounded-2xl border border-line bg-white p-5"><p class="text-sm text-muted">รายการในช่วงที่เลือก</p><strong class="mt-2 block text-3xl text-ink">${number(count)}</strong><p class="mt-2 text-xs text-muted">${range(period)}</p></div><div class="panel-shadow rounded-2xl border border-line bg-white p-5"><p class="text-sm text-muted">ช่วงเปรียบเทียบ</p><strong class="mt-2 block text-3xl text-ink">${number(previous)}</strong><p class="mt-2 text-xs text-muted">${range(comparison)}</p></div><div class="panel-shadow rounded-2xl border border-line bg-white p-5"><p class="text-sm text-muted">การเปลี่ยนแปลงจำนวนรายการ</p><strong class="mt-2 block text-2xl text-ink">${percent == null ? 'เปรียบเทียบเป็นร้อยละไม่ได้' : `${percent > 0 ? '+' : ''}${number(percent)}%`}</strong><p class="mt-2 text-xs text-muted">${previous === 0 ? 'ช่วงเปรียบเทียบไม่มีรายการ' : 'เทียบกับช่วงก่อนหน้า'}</p></div></section>`;
+    const visible = module ? [module] : modules.filter(m => can(`${m.id}.view`));
+    const active = module ? (data.count ? 1 : 0) : visible.filter(m => data[m.id]?.count > 0).length;
+    const summary = `<section class="grid min-w-0 gap-3 sm:grid-cols-3"><div class="rounded-xl border border-line bg-white p-4"><p class="text-sm text-muted">ช่วงวันที่รายงาน</p><strong class="mt-2 block">${range(period)}</strong></div><div class="rounded-xl border border-line bg-white p-4"><p class="text-sm text-muted">จำนวนงานทั้งหมด</p><strong class="mt-2 block text-2xl">${number(count)} รายการ</strong></div><div class="rounded-xl border border-line bg-white p-4"><p class="text-sm text-muted">หมวดที่มีข้อมูล</p><strong class="mt-2 block text-2xl">${active} หมวด</strong></div></section><details class="report-comparison rounded-xl border border-line bg-white p-4"><summary class="cursor-pointer font-semibold">เปรียบเทียบช่วงก่อนหน้า</summary><p class="mt-2 text-sm">${range(comparison)} · ${number(previous)} รายการ · ${percent == null ? 'เปรียบเทียบเป็นร้อยละไม่ได้' : `เปลี่ยนแปลง ${percent > 0 ? '+' : ''}${number(percent)}%`}</p></details>`;
     if (!module) {
-      const visibleGroups = groups.filter(group => modules.some(m => m.group === group.id && can(`${m.id}.view`)));
-      const groupCards = `<section><h2 class="mb-3 text-lg font-bold">ภาพรวม 4 กลุ่มงาน</h2><div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">${visibleGroups.map(group => `<div class="panel-shadow rounded-2xl border border-line bg-white p-5"><h3 class="text-sm font-semibold">${esc(group.label)}</h3><strong class="mt-2 block text-2xl">${number(meta.groups?.[group.id] || 0)}</strong><span class="text-xs text-muted">รายการในช่วงที่เลือก</span></div>`).join('')}</div></section>`;
-      const cards = modules.filter(m => can(`${m.id}.view`)).map(m => `<article class="panel-shadow rounded-2xl border border-line bg-white p-5"><h3 class="font-bold">${esc(m.short)}</h3><p class="mt-2 text-sm"><strong class="text-xl">${number(data[m.id]?.count || 0)}</strong> รายการ</p><div class="mt-3">${metricList(data[m.id], m) || '<p class="text-sm text-muted">ไม่มีตัวชี้วัดปริมาณ</p>'}</div><a class="no-print mt-4 inline-flex min-h-11 items-center font-bold text-primary underline" href="${reportHref(m.id)}">ดูรายงานหมวดนี้</a></article>`).join('');
-      content = `${summary}${groupCards}<section><h2 class="mb-3 text-lg font-bold">รายงานครบ 9 หมวด</h2><div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">${cards || '<p class="text-muted">ไม่มีหมวดที่ได้รับสิทธิ์ดู</p>'}</div></section>`;
+      const sections = groups.filter(group => visible.some(m => m.group === group.id)).map(group => {
+        const rows = visible.filter(m => m.group === group.id).map(m => {
+          const item = data[m.id];
+          const values = quantities(item);
+          return (values.length ? values : [{field: '', total: null, unit: ''}]).map((value, index) => `<tr class="even:bg-[#f8faf8]">${index === 0 ? cell(esc(definitionFor(m.id).label), false, `rowspan="${Math.max(1,values.length)}"`) + cell(number(item?.count || 0), true, `rowspan="${Math.max(1,values.length)}"`) : ''}${cell(esc(labelFor(m.id,value.field)) + (value.kind === 'latest' ? `<span class="block text-xs text-muted">ค่าล่าสุด${value.as_of ? ' ณ '+thaiDate(value.as_of) : ''}</span>` : ''))}${cell(amount(value),true)}${cell(esc(value.unit || ''))}${index === 0 ? cell(`<a class="no-print inline-flex min-h-11 items-center font-semibold text-primary underline" href="${esc(reportHref(m.id))}">ดูรายละเอียด</a>`, false, `rowspan="${Math.max(1,values.length)}"`) : ''}</tr>`).join('');
+        }).join('');
+        return `<section class="min-w-0"><h2 class="mb-3 text-lg font-bold">${esc(group.label)}</h2>${table(['หมวดงาน','จำนวนรายการ','ตัวชี้วัด','ปริมาณ','หน่วย','<span class="no-print">ดูรายละเอียด</span>'],rows,group.label)}</section>`;
+      }).join('');
+      content = summary + (count === 0 ? '<p class="rounded-xl border border-line bg-white p-4 text-muted">ไม่มีรายการในช่วงที่เลือก</p>' : '') + (sections || '<p>ไม่มีหมวดที่ได้รับสิทธิ์ดู</p>');
     } else {
-      const breakdown = data.breakdown?.length ? `<section class="panel-shadow rounded-2xl border border-line bg-white p-5"><h2 class="font-bold">แยกตาม${module.id === 'road-washings' ? 'เขตรักษาความสะอาด' : 'ประเภทขยะมูลฝอย'}</h2><div class="mt-3 divide-y divide-line">${data.breakdown.map(row => `<div class="grid gap-1 py-3 text-sm sm:grid-cols-[minmax(0,1fr)_auto_auto]"><span>${esc(row.name)}</span><span>${number(row.count)} รายการ</span><strong class="min-w-0 break-words">${number(row.total)} ${esc(row.unit)}</strong></div>`).join('')}</div></section>` : '';
-      const recent = `<section class="panel-shadow rounded-2xl border border-line bg-white p-5"><h2 class="font-bold">รายการล่าสุดตามวันที่ดำเนินงาน</h2>${data.recent?.length ? `<ol class="mt-3 divide-y divide-line">${data.recent.map(row => `<li class="flex flex-wrap items-center justify-between gap-2 py-3 text-sm"><div><strong>${esc(row.title || 'รายการงานบริการ')}</strong><p class="text-xs text-muted">${thaiDate(row.service_date)}</p></div><a class="no-print inline-flex min-h-11 items-center font-bold text-primary underline" href="${moduleHref(module.id)}/${encodeURIComponent(row.id)}">ดูรายการ</a></li>`).join('')}</ol>` : '<p class="mt-3 text-sm text-muted">ไม่มีรายการในช่วงที่เลือก</p>'}</section>`;
-      content = `${summary}<section class="panel-shadow rounded-2xl border border-line bg-white p-5"><h2 class="font-bold">ปริมาณงานตามตัวชี้วัด</h2><p class="mt-1 text-xs text-muted">แสดงแต่ละหน่วยแยกกัน; ค่าคงเหลือเป็นค่าล่าสุด</p><div class="mt-3">${metricList(data, module)}</div></section>${breakdown}${recent}<a class="no-print inline-flex min-h-11 items-center font-bold text-primary underline" href="${moduleHref(module.id)}">ไปหน้ารายการ${esc(module.short)}</a>`;
+      const rows = quantities(data).map(value => `<tr>${cell(esc(labelFor(module.id,value.field)))}${cell(amount(value),true)}${cell(esc(value.unit))}${cell(value.kind === 'latest' ? 'ค่าล่าสุด' : 'ผลรวม')}${cell(value.as_of ? thaiDate(value.as_of) : '—')}</tr>`).join('');
+      const breakdown = data.breakdown?.length ? `<section class="min-w-0"><h2 class="mb-3 text-lg font-bold">แยกตาม${module.id === 'road-washings' ? 'เขตรักษาความสะอาด' : 'ประเภทขยะมูลฝอย'}</h2>${table(['ชื่อ','จำนวนรายการ','ปริมาณ','หน่วย'],data.breakdown.map(row => `<tr>${cell(esc(row.name))}${cell(number(row.count),true)}${cell(number(row.total),true)}${cell(esc(row.unit))}</tr>`).join(''),'ข้อมูลแยกตามกลุ่ม')}</section>` : '';
+      const listHref = moduleHref(module.id) + '?' + new URLSearchParams({from:period.from,to:period.to});
+      content = summary + `<section class="min-w-0"><h2 class="mb-3 text-lg font-bold">ตัวชี้วัดงานบริการ</h2>${table(['ตัวชี้วัด','ปริมาณ','หน่วย','ความหมาย','วันที่อ้างอิง'],rows,'ตัวชี้วัดงานบริการ')}</section>` + breakdown + `<a class="no-print inline-flex min-h-11 items-center font-semibold text-primary underline" href="${esc(listHref)}">ดูรายการทั้งหมดในช่วงนี้</a>`;
     }
   }
 
-  return `<div class="report-page space-y-5"><div class="flex flex-wrap items-start justify-between gap-3"><div><p class="text-xs font-bold tracking-wider text-primary">รายงานงานบริการ</p><h1 class="mt-1 text-2xl font-bold sm:text-3xl">${esc(heading)}</h1><p class="mt-2 text-sm text-muted">ข้อมูลจริงจากวันที่ดำเนินงาน ตามสิทธิ์ของคุณ</p></div>${module ? `<a class="no-print inline-flex min-h-11 items-center font-semibold text-primary underline" href="#/reports${query}">กลับภาพรวม</a>` : ''}</div>${filter}${content}</div>`;
+  return `<div class="report-page space-y-5"><div class="flex flex-wrap items-start justify-between gap-3"><div><p class="text-xs font-bold tracking-wider text-primary">รายงานงานบริการ</p><h1 class="type-page-title mt-1">${esc(heading)}</h1><p class="mt-2 text-sm text-muted">ข้อมูลจริงจากวันที่ดำเนินงาน ตามสิทธิ์ของคุณ</p></div>${module ? `<a class="no-print inline-flex min-h-11 items-center font-semibold text-primary underline" href="#/reports${query}">กลับภาพรวม</a>` : ''}</div>${filter}${content}</div>`;
 }

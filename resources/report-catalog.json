@@ -1,0 +1,358 @@
+{
+  "groups": [
+    {
+      "id": "cleaning",
+      "label": "งานบริการรักษาความสะอาด",
+      "short": "รักษาความสะอาด",
+      "icon": "sparkles",
+      "tone": "mint"
+    },
+    {
+      "id": "waste",
+      "label": "งานบริการมูลฝอย",
+      "short": "บริการมูลฝอย",
+      "icon": "recycle",
+      "tone": "sky"
+    },
+    {
+      "id": "sanitation",
+      "label": "งานบริหารจัดการสิ่งปฏิกูล",
+      "short": "จัดการสิ่งปฏิกูล",
+      "icon": "droplet",
+      "tone": "amber"
+    },
+    {
+      "id": "projects",
+      "label": "งานพัฒนาระบบจัดการมูลฝอย",
+      "short": "พัฒนาระบบ",
+      "icon": "chart",
+      "tone": "violet"
+    }
+  ],
+  "modules": [
+    {
+      "id": "road-washings",
+      "label": "การล้างทำความสะอาดถนน ลดฝุ่น และพัฒนาเขตรักษาความสะอาด",
+      "short": "การล้างทำความสะอาดถนน ลดฝุ่น และพัฒนาเขตรักษาความสะอาด",
+      "group": "cleaning",
+      "fields": [
+        {
+          "name": "service_date",
+          "label": "วันที่ดำเนินงาน",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "cleaning_zone_id",
+          "label": "เขตรักษาความสะอาด",
+          "type": "reference",
+          "reference": "cleaning-zones",
+          "required": true
+        },
+        {
+          "name": "location",
+          "label": "สถานที่",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "distance_km",
+          "label": "ระยะทาง",
+          "type": "number",
+          "unit": "กิโลเมตร",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "waterway-cleanings",
+      "label": "การกำจัดผักตบชวาและมูลฝอยในคลองสาธารณะ",
+      "short": "การกำจัดผักตบชวาและมูลฝอยในคลองสาธารณะ",
+      "group": "cleaning",
+      "fields": [
+        {
+          "name": "service_date",
+          "label": "วันเริ่ม",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "end_date",
+          "label": "วันที่สิ้นสุด",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "waterway_name",
+          "label": "ชื่อแหล่งน้ำ",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "distance_km",
+          "label": "ระยะทางปฏิบัติงาน",
+          "type": "number",
+          "unit": "เมตร",
+          "required": true
+        },
+        {
+          "name": "quantity",
+          "label": "ปริมาณที่กำจัดได้",
+          "type": "number",
+          "unit": "ลูกบาศก์เมตร",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "road-sweepings",
+      "label": "การกวาดทำความสะอาดฝุ่นถนนสาธารณะ",
+      "short": "การกวาดทำความสะอาดฝุ่นถนนสาธารณะ",
+      "group": "cleaning",
+      "fields": [
+        {
+          "name": "service_date",
+          "label": "วันที่ดำเนินงาน",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "road",
+          "label": "ถนน",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "distance_km",
+          "label": "ระยะทาง",
+          "type": "number",
+          "unit": "กิโลเมตร",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "outsourced-cleanings",
+      "label": "กิจกรรมจ้างเหมาบุคคลภายนอกรักษาความสะอาดและพัฒนาสิ่งแวดล้อม",
+      "short": "กิจกรรมจ้างเหมาบุคคลภายนอกรักษาความสะอาดและพัฒนาสิ่งแวดล้อม",
+      "group": "cleaning",
+      "fields": [
+        {
+          "name": "service_date",
+          "label": "วันที่ดำเนินงาน",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "location",
+          "label": "สถานที่",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "distance_km",
+          "label": "ระยะทาง",
+          "type": "number",
+          "unit": "กิโลเมตร",
+          "required": true
+        },
+        {
+          "name": "community",
+          "label": "ชุมชน",
+          "type": "text",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "waste-collections",
+      "label": "งานบริหารจัดการมูลฝอย",
+      "short": "งานบริหารจัดการมูลฝอย",
+      "group": "waste",
+      "fields": [
+        {
+          "name": "service_date",
+          "label": "วันเริ่ม",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "end_date",
+          "label": "วันที่สิ้นสุด",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "source",
+          "label": "แหล่งที่เก็บ",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "waste_type_id",
+          "label": "ประเภทขยะมูลฝอย",
+          "type": "reference",
+          "reference": "waste-types",
+          "required": true
+        },
+        {
+          "name": "weight",
+          "label": "น้ำหนัก",
+          "type": "number",
+          "unit": "กิโลกรัม",
+          "required": true
+        },
+        {
+          "name": "hazardous_waste_name",
+          "label": "ชื่อขยะอันตราย",
+          "type": "text",
+          "required": false,
+          "wasteTypeCode": "WASTE-004"
+        }
+      ]
+    },
+    {
+      "id": "drain-cleanings",
+      "label": "งานลอกท่อระบายน้ำ",
+      "short": "ลอกท่อระบายน้ำ",
+      "group": "sanitation",
+      "fields": [
+        {
+          "name": "service_date",
+          "label": "วันที่ดำเนินงาน",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "location",
+          "label": "สถานที่",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "drain_work_type_id",
+          "label": "ประเภทงาน",
+          "type": "reference",
+          "required": true,
+          "reference": "drain-work-types"
+        },
+        {
+          "name": "distance_km",
+          "label": "ระยะทาง",
+          "type": "number",
+          "unit": "เมตร",
+          "required": true
+        },
+        {
+          "name": "sediment_quantity",
+          "label": "ปริมาณตะกอน",
+          "type": "number",
+          "unit": "ลูกบาศก์เมตร",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "septic-pumpings",
+      "label": "งานสูบสิ่งปฏิกูล",
+      "short": "สูบสิ่งปฏิกูล",
+      "group": "sanitation",
+      "fields": [
+        {
+          "name": "service_date",
+          "label": "วันที่ดำเนินงาน",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "location",
+          "label": "สถานที่",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "volume",
+          "label": "ปริมาตรสิ่งปฏิกูล",
+          "type": "number",
+          "unit": "ลูกบาศก์เมตร",
+          "required": true
+        },
+        {
+          "name": "fee_amount",
+          "label": "ค่าธรรมเนียม",
+          "type": "number",
+          "unit": "บาท",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "septic-treatments",
+      "label": "การบำบัดสิ่งปฏิกูล",
+      "short": "บำบัดสิ่งปฏิกูล",
+      "group": "sanitation",
+      "fields": [
+        {
+          "name": "service_date",
+          "label": "วันที่ดำเนินงาน",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "sludge_quantity",
+          "label": "ปริมาณตะกอนสำหรับทำปุ๋ย",
+          "type": "number",
+          "unit": "กิโลกรัม",
+          "required": true
+        },
+        {
+          "name": "fertilizer_remaining",
+          "label": "ปุ๋ยอินทรีย์สูตร 2 คงเหลือ",
+          "type": "number",
+          "unit": "กิโลกรัม",
+          "required": true
+        },
+        {
+          "name": "microbial_note",
+          "label": "ข้อมูลการใส่น้ำจุลินทรีย์ชีวภาพ",
+          "type": "textarea",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "waste-management-projects",
+      "label": "โครงการพัฒนาระบบจัดการมูลฝอย",
+      "short": "โครงการพัฒนา",
+      "group": "projects",
+      "fields": [
+        {
+          "name": "service_date",
+          "label": "วันที่ดำเนินงาน",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "project_name",
+          "label": "ชื่อโครงการ",
+          "type": "text",
+          "required": true
+        },
+        {
+          "name": "communities_count",
+          "label": "จำนวนชุมชนที่เข้าร่วม",
+          "type": "integer",
+          "unit": "ชุมชน",
+          "required": true
+        },
+        {
+          "name": "participants_count",
+          "label": "ผู้เข้าร่วมโครงการ",
+          "type": "integer",
+          "unit": "คน",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

@@ -18,6 +18,7 @@ let activityRecords = [];
 let activityReferences = {
   'cleaning-zones': [],
   'waste-types': [],
+  'drain-work-types': [],
 };
 const loadedReferenceTypes = new Set();
 const expandedFilters = new Set();
@@ -67,7 +68,7 @@ export async function refreshActivityData(moduleId, params = new URLSearchParams
 
 export function formatField(field, value, references = activityReferences) {
   if (!field) return '—';
-  if (value === undefined || value === null || value === '') return '—';
+  if (value === undefined || value === null || value === '') return field.name === 'drain_work_type_id' ? 'ยังไม่ระบุประเภทงาน' : '—';
   if (field.type === 'reference') {
     return esc(references[field.reference]?.find((item) => String(item.id) === String(value))?.name || 'ไม่พบข้อมูลอ้างอิง');
   }
@@ -164,7 +165,7 @@ export function validateForm(form, module, references = activityReferences) {
       }
     } else if (value && field.type === 'date' && (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(new Date(`${value}T00:00:00Z`).getTime()) || new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) !== value)) {
       errors[field.name] = 'กรุณาระบุวันที่ที่ถูกต้อง';
-    } else if (field.type === 'reference' && value && !references[field.reference]?.some((item) => String(item.id) === value && item.is_active)) {
+    } else if (field.type === 'reference' && value && !references[field.reference]?.some((item) => String(item.id) === value && (item.is_active || (field.name === 'drain_work_type_id' && form.dataset.originalDrainType === value)))) {
       errors[field.name] = `กรุณาเลือก${field.label}จากรายการ`;
     }
   });
@@ -185,7 +186,7 @@ export function listPage({ module, group, params, records = activityRecords, ref
   const pages = Math.max(1, Number(meta?.last_page) || Math.ceil(total / pageSize) || 1);
   const safePage = Math.min(pages, Math.max(1, Number(meta?.current_page ?? params.get('page')) || 1));
   const visible = records;
-  const shownFields = module.fields.filter((f) => f.name !== 'service_date').slice(0, ['waste-collections', 'waterway-cleanings'].includes(module.id) ? 4 : 3);
+  const shownFields = module.fields.filter((f) => f.name !== 'service_date').slice(0, ['waste-collections', 'waterway-cleanings', 'drain-cleanings'].includes(module.id) ? 4 : 3);
 
   const buildPage = (next) => {
     const nextParams = new URLSearchParams(params);
@@ -193,7 +194,7 @@ export function listPage({ module, group, params, records = activityRecords, ref
     return `#/module/${module.id}?${nextParams}`;
   };
 
-  const selectFilters = module.fields.filter((f) => f.type === 'reference').map((f) => {
+  const selectFilters = module.fields.filter((f) => f.type === 'reference' && f.name !== 'drain_work_type_id').map((f) => {
     const fValue = params.get(f.name) || '';
     return `
       <div class="w-full min-w-0 sm:w-[170px]">
@@ -308,7 +309,7 @@ export function listPage({ module, group, params, records = activityRecords, ref
             ${visible.map((r) => `
               <tr class="transition hover:bg-[#fafcfa]">
                 <td class="whitespace-nowrap px-5 py-3.5 font-semibold text-ink">${thaiDate(r.service_date)}</td>
-                ${shownFields.map((f) => `<td class="max-w-[240px] ${['number', 'integer'].includes(f.type) ? 'whitespace-normal break-words' : 'truncate'} ${module.id === 'waste-collections' && f.name === 'weight' ? 'text-right' : ''} px-5 py-3.5 text-[#53675e]">${formatField(f, r[f.name], references)}</td>`).join('')}
+                ${shownFields.map((f) => `<td class="max-w-[240px] ${['number', 'integer'].includes(f.type) || f.name === 'drain_work_type_id' ? 'whitespace-normal break-words' : 'truncate'} ${module.id === 'waste-collections' && f.name === 'weight' ? 'text-right' : ''} px-5 py-3.5 text-[#53675e]">${formatField(f, r[f.name], references)}</td>`).join('')}
                 <td class="whitespace-nowrap px-5 py-3.5 text-muted">${esc(r.created_by)}</td>
                 <td class="whitespace-nowrap px-5 py-3.5 text-right">
                   <a href="#/module/${module.id}/${encodeURIComponent(r.id)}" class="inline-flex items-center gap-1 font-bold text-primary hover:underline">
@@ -417,10 +418,13 @@ export function formPage({ module, group, record = null, errors = {}, values = n
         <h2 class="font-bold">รายละเอียดการดำเนินงาน</h2>
         <p class="mt-1 text-xs text-muted">ช่องที่มีเครื่องหมาย * จำเป็นต้องกรอก</p>
       </div>
-      <form id="record-form" data-module="${module.id}" data-id="${record ? esc(record.id) : ''}" novalidate class="p-5 sm:p-7">
+      <form id="record-form" data-module="${module.id}" data-original-drain-type="${esc(record?.drain_work_type_id || '')}" data-id="${record ? esc(record.id) : ''}" novalidate class="p-5 sm:p-7">
         <div class="grid min-w-0 grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
           ${module.fields.map((f) => {
             const rendered = fieldInput(f, data[f.name] ?? '', errors[f.name], references);
+            if (f.name === 'drain_work_type_id' && !(references['drain-work-types'] || []).some(item => item.is_active || String(item.id) === String(data[f.name]))) {
+              return rendered + '<p class="text-sm text-muted sm:col-span-2">ยังไม่มีประเภทงานที่เลือกได้ กรุณาเพิ่มประเภทก่อนบันทึก' + (can('drain-work-types.create') && can('drain-work-types.view') ? ' <a class="underline text-primary" href="#/drain-work-types/new">เพิ่มประเภทงานลอกท่อ</a>' : ' หรือติดต่อผู้ดูแลประเภทงาน') + '</p>';
+            }
             if (!f.wasteTypeCode) return rendered;
             const visible = isHazardousWaste(data.waste_type_id, references);
             const nameInput = fieldInput(f, visible ? data.hazardous_waste_name ?? '' : '', errors.hazardous_waste_name, references)
@@ -468,7 +472,7 @@ export async function submitActivity(form) {
   if (!module) return;
 
   const { data, errors } = validateForm(form, module, activityReferences);
-  const existing = form.dataset.id ? { id: form.dataset.id } : null;
+  const existing = form.dataset.id ? { id: form.dataset.id, drain_work_type_id: form.dataset.originalDrainType || null } : null;
 
   if (Object.keys(errors).length) {
     formDraft = data;
