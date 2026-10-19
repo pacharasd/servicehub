@@ -250,6 +250,8 @@ class SampleDataSeeder extends Seeder
             DB::table('septic_pumpings')->updateOrInsert(
                 ['location' => $row['location'], 'service_date' => $date],
                 [
+                    'end_date' => $date,
+                    'service_users_count' => null,
                     'volume' => $row['volume'],
                     'fee_amount' => $row['fee_amount'],
                     'created_by' => $adminId,

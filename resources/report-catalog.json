@@ -260,14 +260,22 @@
       "fields": [
         {
           "name": "service_date",
-          "label": "วันที่ดำเนินงาน",
+          "label": "วันเริ่ม",
           "type": "date",
           "required": true
         },
         {
-          "name": "location",
-          "label": "สถานที่",
-          "type": "text",
+          "name": "end_date",
+          "label": "วันที่สิ้นสุด",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "service_users_count",
+          "label": "จำนวนผู้ใช้บริการ",
+          "type": "integer",
+          "unit": "คน",
+          "min": 1,
           "required": true
         },
         {

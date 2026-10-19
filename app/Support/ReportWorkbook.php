@@ -49,7 +49,7 @@ class ReportWorkbook
             });
             $summary = [['รายงานงานบริการ'], ['ช่วงวันที่', $this->date($period['from']).' – '.$this->date($period['to'])],
                 ['สร้างเมื่อ (เวลาไทย)', CarbonImmutable::now('Asia/Bangkok')->format('d/m/').(CarbonImmutable::now('Asia/Bangkok')->year + 543).' '.CarbonImmutable::now('Asia/Bangkok')->format('H:i')],
-                ['จำนวนรายการทั้งหมด', $total], ['หมวดงาน', 'จำนวนรายการ', 'ตัวชี้วัด', 'ปริมาณ', 'หน่วย', 'ชนิดค่า', 'วันที่อ้างอิง']];
+                ['จำนวนรายการทั้งหมด', $total], ['หมวดงาน', 'จำนวนรายการ', 'ตัวชี้วัด', 'ปริมาณ', 'หน่วย', 'ชนิดค่า', 'วันที่อ้างอิง', 'หมายเหตุ']];
             $references = [];
             foreach (['cleaning_zones', 'waste_types', 'drain_work_types'] as $table) {
                 $references[$table] = DB::table($table)->get()->keyBy('id');
@@ -64,8 +64,15 @@ class ReportWorkbook
                     }
                     $latest = $field['name'] === 'fertilizer_remaining';
                     $value = $latest ? ($rows[0]->{$field['name']} ?? null) : array_sum(array_map(fn ($row) => (float) $row->{$field['name']}, $rows));
+                    $note = '';
+                    if ($field['name'] === 'service_users_count') {
+                        $recorded = count(array_filter($rows, fn ($row) => $row->service_users_count !== null));
+                        $users = ServiceUsersSummary::make(count($rows), $recorded, (int) $value);
+                        $value = $users['total'];
+                        $note = ServiceUsersSummary::note($users['coverage']);
+                    }
                     $summary[] = [$first ? $definition['label'] : '', $first ? count($rows) : null, $field['label'],
-                        $value === null ? '—' : (float) $value, $field['unit'] ?? '', $latest ? 'ค่าล่าสุด' : 'ผลรวม', $latest && $rows ? $this->date($rows[0]->service_date) : ''];
+                        $value === null ? ($field['name'] === 'service_users_count' ? 'ยังไม่มีข้อมูลจำนวนผู้ใช้บริการ' : '—') : (float) $value, $field['unit'] ?? '', $latest ? 'ค่าล่าสุด' : 'ผลรวม', $latest && $rows ? $this->date($rows[0]->service_date) : '', $note];
                     $first = false;
                 }
                 $sheet = $book->createSheet()->setTitle(mb_substr($definition['short'], 0, 31));
@@ -88,7 +95,7 @@ class ReportWorkbook
                         } elseif ($field['type'] === 'date') {
                             $line[] = $value ? $this->date($value) : '';
                         } elseif (in_array($field['type'], ['number', 'integer'], true)) {
-                            $line[] = $value === null ? null : (float) $value;
+                            $line[] = $value === null ? ($field['name'] === 'service_users_count' ? 'ไม่ระบุ' : null) : (float) $value;
                         } else {
                             $line[] = (string) ($value ?? '');
                         }

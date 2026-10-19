@@ -7,6 +7,7 @@ use App\Support\ReportWorkbook;
 use App\Support\ServiceAudit;
 use App\Support\ServiceCatalog;
 use App\Support\ServiceReports;
+use App\Support\ServiceUsersSummary;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -77,6 +78,9 @@ class ServiceOverviewController extends Controller
                     $metricFields[] = $column;
                 }
             }
+            if ($module === 'septic-pumpings') {
+                $sumColumns[] = 'COUNT(service_users_count) as recorded_users_count';
+            }
             $selectSql = 'COUNT(*) as `period_count`'.($sumColumns ? ', '.implode(', ', $sumColumns) : '');
             if ($from || $to) {
                 $allTime = (clone $query)->selectRaw('COUNT(*) as total, SUM(CASE WHEN service_date = ? THEN 1 ELSE 0 END) as today_count', [$todayDate])->first();
@@ -98,6 +102,11 @@ class ServiceOverviewController extends Controller
                 $metrics['fertilizer_remaining_latest'] = $latest === null ? null : (float) $latest;
             }
             $modules[$module] = ['group' => $definition['group'], 'count' => $count, 'metrics' => $metrics];
+            if ($module === 'septic-pumpings') {
+                $users = ServiceUsersSummary::make($count, (int) $agg->recorded_users_count, (int) $agg->sum_service_users_count);
+                $modules[$module]['metrics']['service_users_count'] = $users['total'];
+                $modules[$module]['service_users_coverage'] = $users['coverage'];
+            }
             if ($module === 'waste-collections') {
                 $types = (clone $periodQuery)
                     ->leftJoin('waste_types', 'waste_collections.waste_type_id', '=', 'waste_types.id')
@@ -133,11 +142,11 @@ class ServiceOverviewController extends Controller
                 'road-sweepings' => 'road',
                 'waste-collections' => 'source',
                 'waste-management-projects' => 'project_name',
-                'septic-treatments' => 'service_date',
+                'septic-treatments', 'septic-pumpings' => 'service_date',
                 default => 'location',
             };
             foreach ((clone $query)->orderByDesc('created_at')->orderByDesc('id')->limit(5)->get(['id', 'service_date', 'created_at', $titleColumn]) as $row) {
-                $recent[] = ['id' => $row->id, 'module' => $module, 'title' => $row->{$titleColumn}, 'service_date' => $row->service_date, 'created_at' => $row->created_at];
+                $recent[] = ['id' => $row->id, 'module' => $module, 'title' => $module === 'septic-pumpings' ? 'งานสูบสิ่งปฏิกูล' : $row->{$titleColumn}, 'service_date' => $row->service_date, 'created_at' => $row->created_at];
             }
         }
         usort($recent, fn ($a, $b) => [($b['created_at'] ?? ''), $b['id']] <=> [($a['created_at'] ?? ''), $a['id']]);
@@ -227,7 +236,7 @@ class ServiceOverviewController extends Controller
         return response()->streamDownload(function () use ($data, $period) {
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF");
-            fputcsv($handle, ['ช่วงเริ่ม', 'ช่วงสิ้นสุด', 'หมวดงาน', 'จำนวนรายการ', 'จำนวนช่วงเปรียบเทียบ', 'การเปลี่ยนแปลง (%)', 'ตัวชี้วัด', 'ค่า', 'หน่วย', 'ชนิดค่า', 'วันที่อ้างอิง']);
+            fputcsv($handle, ['ช่วงเริ่ม', 'ช่วงสิ้นสุด', 'หมวดงาน', 'จำนวนรายการ', 'จำนวนช่วงเปรียบเทียบ', 'การเปลี่ยนแปลง (%)', 'ตัวชี้วัด', 'ค่า', 'หน่วย', 'ชนิดค่า', 'วันที่อ้างอิง', 'หมายเหตุ']);
             foreach ($data as $module => $item) {
                 foreach ($item['quantities'] ?: ['' => [['total' => '', 'unit' => '', 'kind' => 'sum']]] as $field => $values) {
                     foreach ($values as $value) {
@@ -237,7 +246,7 @@ class ServiceOverviewController extends Controller
                             return preg_match('/^[\s\x00-\x1F]*[=+\-@]/u', $text) ? "'".$text : $text;
                         }, [
                             $period['from'], $period['to'], $module, $item['count'], $item['previous_count'],
-                            $item['change_percent'], $field, $value['total'], $value['unit'], $value['kind'], $value['as_of'] ?? '',
+                            $item['change_percent'], $field, $field === 'service_users_count' && $value['total'] === null ? 'ยังไม่มีข้อมูลจำนวนผู้ใช้บริการ' : $value['total'], $value['unit'], $value['kind'], $value['as_of'] ?? '', $value['note'] ?? '',
                         ]));
                     }
                 }

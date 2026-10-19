@@ -92,6 +92,9 @@ class ServiceReports
                 $sumColumns[] = "COALESCE(SUM({$column}), 0) as `sum_{$column}`";
             }
         }
+        if ($module === 'septic-pumpings') {
+            $sumColumns[] = 'COUNT(service_users_count) as recorded_users_count';
+        }
         $currentAgg = (clone $current)->selectRaw('COUNT(*) as total_count'.($sumColumns ? ', '.implode(', ', $sumColumns) : ''))->first();
         $count = (int) $currentAgg->total_count;
         $previousCount = (clone $previous)->count();
@@ -121,7 +124,14 @@ class ServiceReports
             }
         }
 
+        $users = $module === 'septic-pumpings' ? ServiceUsersSummary::make($count, (int) $currentAgg->recorded_users_count, (int) $currentAgg->sum_service_users_count) : null;
+        if ($users !== null) {
+            $quantities['service_users_count'][0]['total'] = $users['total'];
+            $quantities['service_users_count'][0]['note'] = ServiceUsersSummary::note($users['coverage']);
+        }
+
         return [
+            ...($users !== null ? ['metrics' => ['service_users_count' => $users['total']], 'service_users_coverage' => $users['coverage']] : []),
             'group' => $definition['group'],
             'count' => $count,
             'previous_count' => $previousCount,
@@ -161,13 +171,13 @@ class ServiceReports
             'road-sweepings' => 'road',
             'waste-collections' => 'source',
             'waste-management-projects' => 'project_name',
-            'septic-treatments' => 'service_date',
+            'septic-treatments', 'septic-pumpings' => 'service_date',
             default => 'location',
         };
         $item['recent'] = $this->query($table, $period['from'], $period['to'])
             ->orderByDesc('service_date')->orderByDesc('id')->limit(5)
             ->get(['id', 'service_date', $titleColumn])
-            ->map(fn ($row) => ['id' => $row->id, 'service_date' => $row->service_date, 'title' => $row->{$titleColumn}])->all();
+            ->map(fn ($row) => ['id' => $row->id, 'service_date' => $row->service_date, 'title' => $module === 'septic-pumpings' ? 'งานสูบสิ่งปฏิกูล' : $row->{$titleColumn}])->all();
 
         return $item;
     }

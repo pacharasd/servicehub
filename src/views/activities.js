@@ -68,7 +68,7 @@ export async function refreshActivityData(moduleId, params = new URLSearchParams
 
 export function formatField(field, value, references = activityReferences) {
   if (!field) return '—';
-  if (value === undefined || value === null || value === '') return field.name === 'drain_work_type_id' ? 'ยังไม่ระบุประเภทงาน' : '—';
+  if (value === undefined || value === null || value === '') return field.name === 'drain_work_type_id' ? 'ยังไม่ระบุประเภทงาน' : field.name === 'service_users_count' ? 'ไม่ระบุ' : '—';
   if (field.type === 'reference') {
     return esc(references[field.reference]?.find((item) => String(item.id) === String(value))?.name || 'ไม่พบข้อมูลอ้างอิง');
   }
@@ -127,7 +127,7 @@ export function fieldInput(field, value = '', error = '', references = activityR
   } else {
     const isNum = field.type === 'number' || field.type === 'integer';
     const step = field.type === 'number' ? (['distance_km', 'fee_amount'].includes(field.name) ? '0.01' : '0.001') : '1';
-    input = `<input ${common} type="${isNum ? 'number' : field.type}" ${isNum ? `step="${step}" min="0"` : ''} ${field.type === 'text' ? `maxlength="${field.name === 'project_name' ? 500 : 255}"` : ''} value="${esc(value)}" placeholder="${field.type === 'text' ? `ระบุ${esc(field.label)}` : ''}">`;
+    input = `<input ${common} type="${isNum ? 'number' : field.type}" ${isNum ? `step="${step}" min="${field.min ?? 0}"` : ''} ${field.type === 'text' ? `maxlength="${field.name === 'project_name' ? 500 : 255}"` : ''} value="${esc(value)}" placeholder="${field.type === 'text' ? `ระบุ${esc(field.label)}` : ''}">`;
   }
 
   return `
@@ -160,7 +160,7 @@ export function validateForm(form, module, references = activityReferences) {
       errors[field.name] = 'ชื่อขยะอันตรายต้องไม่เกิน 255 ตัวอักษร';
     } else if (value && (field.type === 'number' || field.type === 'integer')) {
       const num = Number(value);
-      if (!Number.isFinite(num) || num < 0 || (field.type === 'integer' && !Number.isInteger(num))) {
+      if (!Number.isFinite(num) || num < (field.min ?? 0) || (field.name === 'service_users_count' && num > 4294967295) || (field.type === 'integer' && !Number.isInteger(num))) {
         errors[field.name] = `กรุณาระบุ${field.label}เป็นจำนวนที่ถูกต้อง`;
       }
     } else if (value && field.type === 'date' && (!/^\d{4}-\d{2}-\d{2}$/.test(value) || Number.isNaN(new Date(`${value}T00:00:00Z`).getTime()) || new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) !== value)) {
@@ -186,7 +186,7 @@ export function listPage({ module, group, params, records = activityRecords, ref
   const pages = Math.max(1, Number(meta?.last_page) || Math.ceil(total / pageSize) || 1);
   const safePage = Math.min(pages, Math.max(1, Number(meta?.current_page ?? params.get('page')) || 1));
   const visible = records;
-  const shownFields = module.fields.filter((f) => f.name !== 'service_date').slice(0, ['waste-collections', 'waterway-cleanings', 'drain-cleanings'].includes(module.id) ? 4 : 3);
+  const shownFields = module.id === 'septic-pumpings' ? module.fields.filter(f => f.name !== 'service_date') : module.fields.filter((f) => f.name !== 'service_date').slice(0, ['waste-collections', 'waterway-cleanings', 'drain-cleanings'].includes(module.id) ? 4 : 3);
 
   const buildPage = (next) => {
     const nextParams = new URLSearchParams(params);

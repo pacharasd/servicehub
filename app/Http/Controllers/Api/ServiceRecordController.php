@@ -42,6 +42,9 @@ class ServiceRecordController extends Controller
             $term = mb_substr(trim((string) $request->input('q')), 0, 100);
             if ($term !== '') {
                 $columns = array_keys(array_filter($definition['fields'], fn ($type) => is_int($type) || $type === 'text'));
+                if ($module === 'septic-pumpings') {
+                    $columns = ['service_date', 'end_date'];
+                }
                 $referenceMatches = [];
                 foreach ($definition['fields'] as $column => $type) {
                     if (in_array($type, ['cleaning_zones', 'waste_types', 'drain_work_types'], true)) {
@@ -77,6 +80,9 @@ class ServiceRecordController extends Controller
     private function decorate(ServiceRecord $record, string $module): array
     {
         $data = $record->toArray();
+        if ($module === 'septic-pumpings') {
+            unset($data['location']);
+        }
         $data['id'] = (string) $record->id;
         $data['module'] = $module;
         $data['created_by_id'] = $record->created_by;

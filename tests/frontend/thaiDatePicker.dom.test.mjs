@@ -112,7 +112,7 @@ test('Thai calendar integrates with forms, events, dynamic routes, presets and k
     assert.equal(root.querySelectorAll('input[type="date"],input[type="month"]').length, 0);
   };
   for (const module of modules) {
-    await checkPage(formPage({ module, record: { id: 1, service_date: '2026-10-09', end_date: '2026-10-10' } }), ['waste-collections', 'waterway-cleanings'].includes(module.id) ? 2 : 1);
+    await checkPage(formPage({ module, record: { id: 1, service_date: '2026-10-09', end_date: '2026-10-10' } }), ['waste-collections', 'waterway-cleanings', 'septic-pumpings'].includes(module.id) ? 2 : 1);
     assert.equal(new FormData(root.querySelector('form')).get('service_date'), '2026-10-09');
     await checkPage(listPage({ module, params: new URLSearchParams() }), 2);
   }
