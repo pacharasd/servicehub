@@ -275,6 +275,8 @@ class SampleDataSeeder extends Seeder
             DB::table('septic_treatments')->updateOrInsert(
                 ['service_date' => $date],
                 [
+                    'end_date' => $date,
+                    'treated_volume' => 0,
                     'sludge_quantity' => $row['sludge_quantity'],
                     'fertilizer_remaining' => $row['fertilizer_remaining'],
                     'microbial_note' => $row['microbial_note'],

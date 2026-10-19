@@ -45,7 +45,7 @@ class LiveServiceApiTest extends TestCase
             'waste-collections' => ['end_date' => '2026-09-29', 'source' => 'แหล่งเก็บ 1', 'waste_type_id' => $waste, 'weight' => 3],
             'drain-cleanings' => ['drain_work_type_id' => $drainType, 'location' => 'จุดท่อทดสอบ', 'distance_km' => 2, 'sediment_quantity' => 3],
             'septic-pumpings' => ['end_date' => '2026-09-29', 'service_users_count' => 2, 'location' => 'บ้านเลขที่ 123', 'volume' => 3, 'fee_amount' => 10],
-            'septic-treatments' => ['sludge_quantity' => 3, 'fertilizer_remaining' => 4, 'microbial_note' => 'ทดสอบ'],
+            'septic-treatments' => ['end_date' => '2026-09-29', 'treated_volume' => 5, 'sludge_quantity' => 3, 'fertilizer_remaining' => 4, 'microbial_note' => 'ทดสอบ'],
             'waste-management-projects' => ['project_name' => 'โครงการทดสอบ', 'communities_count' => 2, 'participants_count' => 10],
         ];
         foreach ($payloads as $module => $fields) {

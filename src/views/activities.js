@@ -186,7 +186,7 @@ export function listPage({ module, group, params, records = activityRecords, ref
   const pages = Math.max(1, Number(meta?.last_page) || Math.ceil(total / pageSize) || 1);
   const safePage = Math.min(pages, Math.max(1, Number(meta?.current_page ?? params.get('page')) || 1));
   const visible = records;
-  const shownFields = module.id === 'septic-pumpings' ? module.fields.filter(f => f.name !== 'service_date') : module.fields.filter((f) => f.name !== 'service_date').slice(0, ['waste-collections', 'waterway-cleanings', 'drain-cleanings'].includes(module.id) ? 4 : 3);
+  const shownFields = ['septic-pumpings', 'septic-treatments'].includes(module.id) ? module.fields.filter(f => f.name !== 'service_date') : module.fields.filter((f) => f.name !== 'service_date').slice(0, ['waste-collections', 'waterway-cleanings', 'drain-cleanings'].includes(module.id) ? 4 : 3);
 
   const buildPage = (next) => {
     const nextParams = new URLSearchParams(params);
@@ -404,6 +404,12 @@ export function detailPage({ module, group, record, references = activityReferen
 export function formPage({ module, group, record = null, errors = {}, values = null, references = activityReferences }) {
   const editing = Boolean(record);
   const data = { ...(values || formDraft || record || {}) };
+  const formFields = [...module.fields];
+  if (module.id === 'drain-cleanings') {
+    const locationIndex = formFields.findIndex(field => field.name === 'location');
+    const typeIndex = formFields.findIndex(field => field.name === 'drain_work_type_id');
+    [formFields[locationIndex], formFields[typeIndex]] = [formFields[typeIndex], formFields[locationIndex]];
+  }
   if (!editing && !data.service_date) {
     const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
     const part = (type) => parts.find((item) => item.type === type).value;
@@ -420,7 +426,7 @@ export function formPage({ module, group, record = null, errors = {}, values = n
       </div>
       <form id="record-form" data-module="${module.id}" data-original-drain-type="${esc(record?.drain_work_type_id || '')}" data-id="${record ? esc(record.id) : ''}" novalidate class="p-5 sm:p-7">
         <div class="grid min-w-0 grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-          ${module.fields.map((f) => {
+          ${formFields.map((f) => {
             const rendered = fieldInput(f, data[f.name] ?? '', errors[f.name], references);
             if (f.name === 'drain_work_type_id' && !(references['drain-work-types'] || []).some(item => item.is_active || String(item.id) === String(data[f.name]))) {
               return rendered + '<p class="text-sm text-muted sm:col-span-2">ยังไม่มีประเภทงานที่เลือกได้ กรุณาเพิ่มประเภทก่อนบันทึก' + (can('drain-work-types.create') && can('drain-work-types.view') ? ' <a class="underline text-primary" href="#/drain-work-types/new">เพิ่มประเภทงานลอกท่อ</a>' : ' หรือติดต่อผู้ดูแลประเภทงาน') + '</p>';

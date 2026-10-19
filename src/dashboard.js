@@ -3,7 +3,7 @@ import { renderDatePresets } from './utils/filter.js';
 
 const metricUnits = {
   distance_km: 'กิโลเมตร', quantity: 'ลูกบาศก์เมตร', weight: 'กิโลกรัม', sediment_quantity: 'ลูกบาศก์เมตร',
-  volume: 'ลูกบาศก์เมตร', fee_amount: 'บาท', sludge_quantity: 'กิโลกรัม',
+  volume: 'ลูกบาศก์เมตร', treated_volume: 'ลูกบาศก์เมตร', fee_amount: 'บาท', sludge_quantity: 'กิโลกรัม',
   fertilizer_remaining_latest: 'กิโลกรัม', communities_count: 'ชุมชน', participants_count: 'คน',
 };
 
@@ -79,7 +79,7 @@ export function dashboardContent({ data, loading, error, params, groups, modules
     sanitation: [
       ...(visible('drain-cleanings') ? [['ตะกอนจากงานลอกท่อ', metricValue('drain-cleanings', 'sediment_quantity'), 'ลูกบาศก์เมตร']] : []),
       ...(visible('septic-pumpings') ? [['สิ่งปฏิกูลที่สูบ', metricValue('septic-pumpings', 'volume'), 'ลูกบาศก์เมตร'], ['ผู้ใช้บริการงานสูบสิ่งปฏิกูล', data.module_summary['septic-pumpings'].metrics.service_users_count ?? null, 'คน', usersNote(data.module_summary['septic-pumpings'].service_users_coverage)]] : []),
-      ...(visible('septic-treatments') ? [['ตะกอนสำหรับทำปุ๋ย', metricValue('septic-treatments', 'sludge_quantity'), 'กิโลกรัม']] : []),
+      ...(visible('septic-treatments') ? [['บำบัดสิ่งปฏิกูลรวม', metricValue('septic-treatments', 'treated_volume'), 'ลูกบาศก์เมตร'], ['ตะกอนสำหรับทำปุ๋ย', metricValue('septic-treatments', 'sludge_quantity'), 'กิโลกรัม']] : []),
     ],
     projects: [['ผู้เข้าร่วมโครงการ', metricValue('waste-management-projects', 'participants_count'), 'คน']],
   };

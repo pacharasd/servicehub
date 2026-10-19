@@ -47,7 +47,7 @@ test('septic form dates and users validate and retain values with errors',()=>{
 test('septic table retains every column, numeric values and unknown legacy users',()=>{
   mount();
   let doc=mount(listPage({module,group,params:new URLSearchParams(),records:[record]}));
-  assert.deepEqual([...doc.querySelectorAll('th')].slice(0,5).map(th=>th.textContent.trim()),['วันเริ่ม','วันที่สิ้นสุด','จำนวนผู้ใช้บริการ','ปริมาตรสิ่งปฏิกูล','ค่าธรรมเนียม']);
+  assert.deepEqual([...doc.querySelectorAll('th')].slice(0,5).map(th=>th.textContent.trim()),['วันเริ่ม','วันที่สิ้นสุด','จำนวนผู้ใช้บริการ','ปริมาตรสิ่งปฏิกูลรวม','ค่าธรรมเนียม']);
   assert.doesNotMatch(doc.body.textContent,/สถานที่/);
   assert.match(doc.body.textContent,/1,250 คน/);
   assert.match(doc.body.textContent,/3.8 ลูกบาศก์เมตร/);
@@ -79,3 +79,23 @@ test('dashboard and reports expose coverage without turning unknown counts into 
   delete data.module_summary['septic-pumpings'];
   assert.doesNotMatch(renderDashboard(),/ผู้ใช้บริการงานสูบสิ่งปฏิกูล|ยังไม่ระบุจำนวน/);
 });
+
+test('septic treatment form and table include end_date and treated_volume alongside existing fields',()=>{
+  mount();
+  const treatmentModule = modules.find(item => item.id === 'septic-treatments');
+  const treatmentGroup = groups.find(item => item.id === treatmentModule.group);
+  const treatmentRecord = {id:'1',service_date:'2026-10-01',end_date:'2026-10-05',treated_volume:12.5,sludge_quantity:200,fertilizer_remaining:300,microbial_note:'ทดสอบจุลินทรีย์'};
+  let doc=mount(formPage({module:treatmentModule,group:treatmentGroup,record:treatmentRecord}));
+  assert.deepEqual([...doc.querySelectorAll('input[name], textarea[name]')].map(el=>el.name),['service_date','end_date','treated_volume','sludge_quantity','fertilizer_remaining','microbial_note']);
+  const form=doc.querySelector('form');
+  assert.deepEqual(validateForm(form,treatmentModule).errors,{});
+  form.elements.end_date.value='2026-09-30';
+  assert.ok(validateForm(form,treatmentModule).errors.end_date);
+  form.elements.end_date.value='2026-10-05';
+  form.elements.treated_volume.value='';
+  assert.ok(validateForm(form,treatmentModule).errors.treated_volume);
+  doc=mount(listPage({module:treatmentModule,group:treatmentGroup,params:new URLSearchParams(),records:[treatmentRecord]}));
+  assert.deepEqual([...doc.querySelectorAll('th')].slice(0,6).map(th=>th.textContent.trim()),['วันเริ่ม','วันที่สิ้นสุด','บำบัดสิ่งปฏิกูลรวม','ปริมาณตะกอนสำหรับทำปุ๋ย','ปุ๋ยอินทรีย์สูตร 2 คงเหลือ','ข้อมูลการใส่น้ำจุลินทรีย์ชีวภาพ']);
+  assert.match(doc.body.textContent,/12.5 ลูกบาศก์เมตร/);
+});
+

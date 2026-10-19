@@ -280,7 +280,7 @@
         },
         {
           "name": "volume",
-          "label": "ปริมาตรสิ่งปฏิกูล",
+          "label": "ปริมาตรสิ่งปฏิกูลรวม",
           "type": "number",
           "unit": "ลูกบาศก์เมตร",
           "required": true
@@ -302,8 +302,21 @@
       "fields": [
         {
           "name": "service_date",
-          "label": "วันที่ดำเนินงาน",
+          "label": "วันเริ่ม",
           "type": "date",
+          "required": true
+        },
+        {
+          "name": "end_date",
+          "label": "วันที่สิ้นสุด",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "treated_volume",
+          "label": "บำบัดสิ่งปฏิกูลรวม",
+          "type": "number",
+          "unit": "ลูกบาศก์เมตร",
           "required": true
         },
         {
