@@ -112,10 +112,11 @@ class ReportWorkbookTest extends TestCase
             $this->assertStringContainsString('ชื่อขยะอันตราย', $waste->getCell('H4')->getValue());
             $this->assertEquals(3.8, $waste->getCell('G5')->getValue());
             $drain = $book->getSheet(6);
-            $this->assertSame('ประเภททดสอบ', $drain->getCell('D5')->getValue());
-            $this->assertSame('TEST', $drain->getCell('E5')->getValue());
-            $this->assertStringContainsString('(เมตร)', $drain->getCell('F4')->getValue());
-            $this->assertEquals(3.8, $drain->getCell('F5')->getValue());
+            $this->assertSame('01/11/2569', $drain->getCell('C5')->getValue());
+            $this->assertSame('ประเภททดสอบ', $drain->getCell('E5')->getValue());
+            $this->assertSame('TEST', $drain->getCell('F5')->getValue());
+            $this->assertStringContainsString('(เมตร)', $drain->getCell('G4')->getValue());
+            $this->assertEquals(3.8, $drain->getCell('G5')->getValue());
             $book->disconnectWorksheets();
         } finally {
             unlink($path);

@@ -8,7 +8,7 @@ import { modules, groups } from '../../src/data.js';
 const module = modules.find(row => row.id === 'drain-cleanings');
 const group = groups.find(row => row.id === module.group);
 const refs = {'drain-work-types': [{id:1,code:'001',name:'ลอกท่อ'.repeat(30)+'<script>',is_active:true},{id:2,code:'002',name:'ประเภทระงับ',is_active:false}]};
-const record = {id:'3',service_date:'2026-10-19',location:'ถนน',drain_work_type_id:1,distance_km:100,sediment_quantity:3.8};
+const record = {id:'3',service_date:'2026-10-19',end_date:'2026-10-20',location:'ถนน',drain_work_type_id:1,distance_km:100,sediment_quantity:3.8};
 function mount(html) {
   const dom = new JSDOM(html,{url:'http://localhost/Servicehub'});
   globalThis.window = dom.window; globalThis.document = dom.window.document; globalThis.FormData = dom.window.FormData;
@@ -41,7 +41,7 @@ test('drain list preserves all columns, units and legacy types without adding a 
   mount('');
   const html=listPage({module,group,params:new URLSearchParams(),records:[record],references:refs});
   const doc=mount(html);
-  for(const label of ['ประเภทงาน','ระยะทาง','ปริมาณตะกอน']) assert.match(doc.querySelector('thead').textContent,new RegExp(label));
+  for(const label of ['วันเริ่ม','วันที่สิ้นสุด','สถานที่','ประเภทงาน','ระยะทาง','ปริมาณตะกอน']) assert.match(doc.querySelector('thead').textContent,new RegExp(label));
   assert.match(doc.body.textContent,/100 เมตร/);
   assert.match(doc.body.textContent,/3.8 ลูกบาศก์เมตร/);
   assert.equal(doc.querySelector('select[name="drain_work_type_id"]'),null);

@@ -29,7 +29,7 @@ class DrainWorkTypesTest extends TestCase
         $type = ['code' => '001', 'name' => 'ลอกท่อทดสอบ', 'is_active' => true];
         $id = $this->postJson('/api/references/drain-work-types', $type)->assertCreated()->json('data.id');
         $this->postJson('/api/references/drain-work-types', $type)->assertUnprocessable()->assertJsonValidationErrors(['code', 'name']);
-        $body = ['service_date' => '2026-10-01', 'location' => 'ถนนทดสอบ', 'distance_km' => 100, 'sediment_quantity' => 3.8];
+        $body = ['service_date' => '2026-10-01', 'end_date' => '2026-10-02', 'location' => 'ถนนทดสอบ', 'distance_km' => 100, 'sediment_quantity' => 3.8];
         $this->postJson('/api/activities/drain-cleanings', $body)->assertUnprocessable()->assertJsonValidationErrors('drain_work_type_id');
         $this->postJson('/api/activities/drain-cleanings', [...$body, 'drain_work_type_id' => 99999])->assertUnprocessable();
         $body['drain_work_type_id'] = $id;
@@ -57,7 +57,7 @@ class DrainWorkTypesTest extends TestCase
         $this->signIn();
         $migration = require database_path('migrations/2026_10_19_000001_add_drain_work_types.php');
         $migration->down();
-        $body = ['service_date' => '2026-10-01', 'location' => 'งานเก่า', 'distance_km' => 3.8, 'sediment_quantity' => 100];
+        $body = ['service_date' => '2026-10-01', 'end_date' => '2026-10-01', 'location' => 'งานเก่า', 'distance_km' => 3.8, 'sediment_quantity' => 100];
         $id = DB::table('drain_cleanings')->insertGetId($body);
         $migration->up();
         $this->assertDatabaseHas('drain_cleanings', ['id' => $id, 'drain_work_type_id' => null, 'distance_km' => 3.8, 'sediment_quantity' => 100]);

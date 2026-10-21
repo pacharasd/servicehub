@@ -219,7 +219,13 @@
       "fields": [
         {
           "name": "service_date",
-          "label": "วันที่ดำเนินงาน",
+          "label": "วันเริ่ม",
+          "type": "date",
+          "required": true
+        },
+        {
+          "name": "end_date",
+          "label": "วันที่สิ้นสุด",
           "type": "date",
           "required": true
         },

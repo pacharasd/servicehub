@@ -186,7 +186,7 @@ export function listPage({ module, group, params, records = activityRecords, ref
   const pages = Math.max(1, Number(meta?.last_page) || Math.ceil(total / pageSize) || 1);
   const safePage = Math.min(pages, Math.max(1, Number(meta?.current_page ?? params.get('page')) || 1));
   const visible = records;
-  const shownFields = ['septic-pumpings', 'septic-treatments'].includes(module.id) ? module.fields.filter(f => f.name !== 'service_date') : module.fields.filter((f) => f.name !== 'service_date').slice(0, ['waste-collections', 'waterway-cleanings', 'drain-cleanings'].includes(module.id) ? 4 : 3);
+  const shownFields = ['septic-pumpings', 'septic-treatments', 'drain-cleanings'].includes(module.id) ? module.fields.filter(f => f.name !== 'service_date') : module.fields.filter((f) => f.name !== 'service_date').slice(0, ['waste-collections', 'waterway-cleanings'].includes(module.id) ? 4 : 3);
 
   const buildPage = (next) => {
     const nextParams = new URLSearchParams(params);

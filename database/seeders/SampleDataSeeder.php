@@ -224,6 +224,7 @@ class SampleDataSeeder extends Seeder
             DB::table('drain_cleanings')->updateOrInsert(
                 ['location' => $row['location'], 'service_date' => $date],
                 [
+                    'end_date' => $date,
                     'distance_km' => $row['distance_km'],
                     'sediment_quantity' => $row['sediment_quantity'],
                     'created_by' => $adminId,
