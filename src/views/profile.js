@@ -24,7 +24,7 @@ export function profilePage() {
       <section class="panel-shadow rounded-2xl border border-line bg-white p-5 sm:p-7 flex flex-col justify-between" aria-labelledby="profile-info-heading">
         <div>
           <div class="flex items-center gap-4 pb-6 border-b border-line">
-            <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#177a67] to-[#0e6253] text-xl font-bold text-white shadow-md">
+            <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-md bg-[#0F2926] text-lg font-bold text-white">
               ${esc(initials)}
             </div>
             <div class="min-w-0 flex-1">

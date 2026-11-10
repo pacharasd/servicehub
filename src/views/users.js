@@ -79,16 +79,16 @@ export function userKpiCards(summary) {
   ];
 
   return `
-    <section aria-label="สรุปสถิติผู้ใช้" class="mb-6 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+    <section aria-label="สรุปสถิติผู้ใช้" class="mb-6 grid grid-cols-2 divide-x divide-y divide-line overflow-hidden rounded-md border border-line bg-white xl:grid-cols-4 xl:divide-y-0">
       ${cards.map((c) => `
-        <div class="rounded-2xl border border-line bg-white p-4 sm:p-5 panel-shadow">
-          <div class="flex items-center gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${c.bg} ${c.color}">
-              ${icon(c.icon, 19)}
+        <div class="p-4 sm:p-5">
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-xs text-muted">${esc(c.label)}</p>
+            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-sm ${c.bg} ${c.color}">
+              ${icon(c.icon, 16)}
             </div>
-            <p class="text-xs font-medium text-muted">${esc(c.label)}</p>
           </div>
-          <p class="mt-3 text-[26px] font-bold leading-none text-ink">${esc(String(c.value))}</p>
+          <p class="mt-2.5 text-2xl font-bold tabular-nums leading-none text-ink">${esc(String(c.value))}</p>
         </div>
       `).join('')}
     </section>

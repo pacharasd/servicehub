@@ -85,9 +85,9 @@ export function renderDatePresets({ from = '', to = '', formId = '', cls = '' } 
             data-from="${range.from}"
             data-to="${range.to}"
             ${formId ? `data-form="${esc(formId)}"` : ''}
-            class="min-h-11 inline-flex items-center rounded-lg px-3 py-2 text-xs font-bold transition ${
+            class="min-h-11 inline-flex items-center rounded-md px-3 py-2 text-xs font-bold transition ${
               isActive
-                ? 'bg-primary text-white shadow-xs'
+                ? 'bg-primary text-white'
                 : 'border border-line bg-white text-muted hover:border-primary/40 hover:text-ink'
             }"
             aria-pressed="${isActive}"

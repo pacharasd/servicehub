@@ -113,26 +113,57 @@ function renderWaste(data, options = {}) {
   return dashboardContent({ data, loading: false, error: '', params: new URLSearchParams(), groups, modules, icon, esc, number, moduleHref: id => '#/module/' + id, ...options });
 }
 
-test('waste card shows weights and escaped top name without a report link', () => {
+test('waste card shows total weight, pie chart and all waste types with escaped names without a report link', () => {
   const data = mockDashboardData({ from: '2026-10-01', to: '2026-10-31', total: 3 });
-  data.module_summary['waste-collections'] = { count: 3, metrics: { weight: 1250.5 }, waste_overview: { hazardous_weight: 12.5, top_type: { code: 'WASTE-001', name: '<ทั่วไป>', weight: 1238 } } };
+  data.module_summary['waste-collections'] = {
+    count: 3,
+    metrics: { weight: 1250.5 },
+    waste_overview: {
+      hazardous_weight: 12.5,
+      top_type: { code: 'WASTE-001', name: '<ทั่วไป>', weight: 1238 },
+      breakdown: [
+        { code: 'WASTE-001', name: '<ทั่วไป>', weight: 1238 },
+        { code: 'WASTE-004', name: 'ขยะอันตราย', weight: 12.5 },
+        { code: 'WASTE-002', name: 'ขยะเปียก/อินทรีย์', weight: 0 },
+      ],
+    },
+  };
   const html = renderWaste(data);
   assert.match(html, /น้ำหนักมูลฝอย<\/dt><dd[^>]*>1,250.5 กิโลกรัม/);
-  assert.match(html, /น้ำหนักขยะอันตราย<\/dt><dd[^>]*>12.5 กิโลกรัม/);
-  assert.match(html, /ประเภทที่มีน้ำหนักมากที่สุด<\/dt><dd[^>]*break-words[^>]*>&lt;ทั่วไป&gt; · 1,238 กิโลกรัม/);
+  assert.match(html, /&lt;ทั่วไป&gt;/);
+  assert.match(html, /<strong>1,238<\/strong> <span[^>]*>กิโลกรัม \(99%\)<\/span>/);
+  assert.match(html, /ขยะอันตราย/);
+  assert.match(html, /<strong>12.5<\/strong> <span[^>]*>กิโลกรัม \(1%\)<\/span>/);
+  assert.match(html, /ขยะเปียก\/อินทรีย์/);
+  assert.match(html, /<strong>0<\/strong> <span[^>]*>กิโลกรัม \(0%\)<\/span>/);
+  assert.doesNotMatch(html, /waste-weight-heading/);
+  assert.doesNotMatch(html, /น้ำหนักขยะอันตราย<\/dt>|ประเภทที่มีน้ำหนักมากที่สุด/);
   assert.doesNotMatch(html, /href="#\/reports\/waste-collections|ดูรายงานช่วงนี้|ดูรายงานเดือนนี้/);
-  assert.ok(html.indexOf('น้ำหนักมูลฝอย') < html.indexOf('น้ำหนักขยะอันตราย'));
-  assert.ok(html.indexOf('น้ำหนักขยะอันตราย') < html.indexOf('ประเภทที่มีน้ำหนักมากที่สุด'));
 });
 
-test('waste card handles empty and zero weights without report links', () => {
+test('waste card handles empty and zero weights across all waste types without report links', () => {
   for (const period of [{ from: null, to: null, total: 0 }, { from: '2026-10-01', to: null, total: 0 }, { from: null, to: '2026-10-31', total: 0 }]) {
     const data = mockDashboardData(period);
-    data.module_summary['waste-collections'] = { count: 0, metrics: { weight: 0 }, waste_overview: { hazardous_weight: 0, top_type: null } };
-    assert.doesNotMatch(renderWaste(data), /href="#\/reports\/waste-collections|ดูรายงานเดือนนี้/);
-    assert.match(renderWaste(data), /ประเภทที่มีน้ำหนักมากที่สุด<\/dt><dd[^>]*>ยังไม่มีข้อมูล/);
+    data.module_summary['waste-collections'] = {
+      count: 0,
+      metrics: { weight: 0 },
+      waste_overview: {
+        hazardous_weight: 0,
+        top_type: null,
+        breakdown: [
+          { code: 'WASTE-001', name: 'ขยะทั่วไป', weight: 0 },
+          { code: 'WASTE-002', name: 'ขยะเปียก/อินทรีย์', weight: 0 },
+        ],
+      },
+    };
+    const html = renderWaste(data);
+    assert.doesNotMatch(html, /href="#\/reports\/waste-collections|ดูรายงานเดือนนี้/);
+    assert.match(html, /ขยะทั่วไป/);
+    assert.match(html, /ขยะเปียก\/อินทรีย์/);
+    assert.match(html, /<strong>0<\/strong> <span[^>]*>กิโลกรัม \(0%\)<\/span>/);
     data.module_summary['waste-collections'].count = 1;
-    assert.match(renderWaste(data), /ยังไม่มีน้ำหนักที่บันทึก/);
+    data.module_summary['waste-collections'].waste_overview.breakdown = [];
+    assert.match(renderWaste(data), /ยังไม่มีข้อมูลประเภทขยะ/);
   }
 });
 
@@ -159,7 +190,7 @@ test('dashboard KPIs distinguish record count, active modules and today without 
   assert.match(cards[1].querySelector('.type-kpi').textContent,/1 หมวด/);
   assert.match(cards[2].textContent,/ดำเนินงานวันนี้/);
   assert.match(cards[2].textContent,/ไม่ขึ้นกับช่วงที่เลือก/);
-  assert.ok(html.indexOf('id="waste-weight-heading"') < html.indexOf('id="module-heading"'));
+  assert.ok(html.indexOf('id="distribution-heading"') < html.indexOf('id="module-heading"'));
   assert.ok(html.indexOf('id="recent-heading"') < html.indexOf('id="module-heading"'));
   const form = doc.getElementById('dashboard-filter');
   assert.ok(form.parentElement.querySelector('#dashboard-filter-error'));
@@ -174,11 +205,11 @@ test('waste chart follows dashboard permissions and loading/error state', () => 
   const data=mockDashboardData();
   data.module_summary['waste-collections'].waste_overview={breakdown:[{code:'A',name:'ขยะจริง',weight:1234.5}]};
   let html=renderWaste(data);
-  assert.match(html,/1,234.5 กิโลกรัม/);
-  assert.doesNotMatch(html,/แนวโน้มจำนวนรายการ/);
+  assert.match(html,/<strong>1,234\.5<\/strong> <span[^>]*>กิโลกรัม/);
+  assert.doesNotMatch(html,/แนวโน้มจำนวนรายการ|waste-weight-heading/);
   delete data.module_summary['waste-collections'];
   html=renderWaste(data);
-  assert.doesNotMatch(html,/waste-weight-heading|xl:grid-cols-2/);
+  assert.doesNotMatch(html,/waste-weight-heading|xl:grid-cols-2|ขยะจริง/);
   assert.match(html,/distribution-heading/);
   assert.match(html,/recent-heading/);
 });

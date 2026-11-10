@@ -177,7 +177,7 @@ class DashboardOverviewTest extends TestCase
         $this->assertEquals(10, $item['waste_overview']['top_type']['weight']);
         $this->assertCount(5, $queries);
         $breakdown = $item['waste_overview']['breakdown'];
-        $this->assertSame(['2.2.2', 'WASTE-001', 'WASTE-004'], array_column($breakdown, 'code'));
+        $this->assertSame(['2.2.2', 'WASTE-001', 'WASTE-004', 'WASTE-002', 'WASTE-003', 'WASTE-005'], array_column($breakdown, 'code'));
         $this->assertEquals($item['metrics']['weight'], array_sum(array_column($breakdown, 'weight')));
         $this->assertSame('มูลฝอยอันตรายและซากอิเล็กทรอนิกส์', $breakdown[0]['name']);
         $all = $this->getJson('/api/dashboard')->assertOk()->json('data.module_summary.waste-collections');
@@ -188,10 +188,12 @@ class DashboardOverviewTest extends TestCase
             ->assertJsonPath('data.module_summary.waste-collections.waste_overview.hazardous_weight', 100)
             ->assertJsonPath('data.module_summary.waste-collections.waste_overview.breakdown.0.weight', 100)
             ->assertJsonPath('data.module_summary.waste-collections.waste_overview.top_type.code', 'WASTE-004');
-        $this->getJson('/api/dashboard?from=2026-11-01')->assertOk()
+        $emptyPeriod = $this->getJson('/api/dashboard?from=2026-11-01')->assertOk()
             ->assertJsonPath('data.module_summary.waste-collections.count', 0)
-            ->assertJsonPath('data.module_summary.waste-collections.waste_overview.breakdown', [])
-            ->assertJsonPath('data.module_summary.waste-collections.waste_overview.top_type', null);
+            ->assertJsonPath('data.module_summary.waste-collections.waste_overview.top_type', null)
+            ->json('data.module_summary.waste-collections.waste_overview.breakdown');
+        $this->assertSame(['WASTE-001', 'WASTE-002', 'WASTE-003', 'WASTE-004', 'WASTE-005'], array_column($emptyPeriod, 'code'));
+        $this->assertSame([0, 0, 0, 0, 0], array_map('intval', array_column($emptyPeriod, 'weight')));
     }
 
     public function test_waste_overview_empty_zero_and_no_hazard_records(): void

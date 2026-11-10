@@ -108,11 +108,15 @@ class ServiceOverviewController extends Controller
                 $modules[$module]['service_users_coverage'] = $users['coverage'];
             }
             if ($module === 'waste-collections') {
-                $types = (clone $periodQuery)
-                    ->leftJoin('waste_types', 'waste_collections.waste_type_id', '=', 'waste_types.id')
+                $periodWasteSub = (clone $periodQuery)
+                    ->select('waste_type_id')
+                    ->selectRaw('COALESCE(SUM(weight), 0) as total_weight, COUNT(*) as record_count')
+                    ->groupBy('waste_type_id');
+                $types = DB::table('waste_types')
+                    ->leftJoinSub($periodWasteSub, 'period_waste', fn ($join) => $join->on('waste_types.id', '=', 'period_waste.waste_type_id'))
+                    ->where(fn ($q) => $q->where('waste_types.is_active', true)->orWhereNotNull('period_waste.record_count'))
                     ->select('waste_types.code', 'waste_types.name')
-                    ->selectRaw('COALESCE(SUM(waste_collections.weight), 0) as total_weight')
-                    ->groupBy('waste_types.id', 'waste_types.code', 'waste_types.name')
+                    ->selectRaw('COALESCE(period_waste.total_weight, 0) as total_weight')
                     ->orderByDesc('total_weight')->orderBy('waste_types.code')->get();
                 $top = $types->first();
                 $modules[$module]['waste_overview'] = [
